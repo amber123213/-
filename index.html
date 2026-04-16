@@ -37,8 +37,8 @@
         .math-card { border-left: 4px solid #3b82f6; background-color: #f8fafc; padding: 1.5rem; border-radius: 0.5rem; margin: 0.5rem 0; overflow-x: auto; }
         
         /* 表格样式 */
-        .academic-table th { background-color: #f8fafc; color: #475569; font-weight: bold; border-bottom: 2px solid #cbd5e1; padding: 10px; font-size: 0.9rem; }
-        .academic-table td { border-bottom: 1px solid #e2e8f0; padding: 10px; font-size: 0.9rem; }
+        .academic-table th { background-color: #f8fafc; color: #475569; font-weight: bold; border-bottom: 2px solid #cbd5e1; padding: 10px; font-size: 0.9rem; text-align: center; }
+        .academic-table td { border-bottom: 1px solid #e2e8f0; padding: 10px; font-size: 0.9rem; text-align: center; }
         .current-row td { background-color: #eff6ff !important; font-weight: bold; color: #1d4ed8; border-top: 1px solid #bfdbfe; border-bottom: 1px solid #bfdbfe; }
         
         /* 过渡动画 */
@@ -83,7 +83,7 @@
                     <option value="gm">例 6-8: 灰色预测模型 GM(1,1)</option>
                     <option value="ahp">例 8-9: 层次分析法 (AHP)</option>
                     <option value="gahp">例 8-10: 群组层次分析法 (Group AHP)</option>
-
+                    <option value="uncert">例 9-1: 不确定型决策分析 (5大准则)</option>
                 </select>
             </div>
         </div>
@@ -92,6 +92,139 @@
     <main class="flex-grow p-6 flex justify-center items-start">
         <div class="max-w-[1600px] w-full relative">
 
+            <div id="app-uncert" class="app-container space-y-6 hidden">
+                <nav class="bg-white shadow-sm flex justify-center gap-8 text-base rounded-lg border overflow-hidden">
+                    <button onclick="switchTabUncert('sandbox')" id="uncert-nav-sandbox" class="nav-active py-3.5 px-8 flex items-center gap-2"><i class="fa-solid fa-table-cells"></i> 矩阵推演沙盒</button>
+                    <button onclick="switchTabUncert('steps')" id="uncert-nav-steps" class="py-3.5 px-8 flex items-center gap-2 text-slate-600 hover:bg-slate-50 transition-all"><i class="fa-solid fa-list-check"></i> 准则原理详解</button>
+                    <button onclick="switchTabUncert('code')" id="uncert-nav-code" class="py-3.5 px-8 flex items-center gap-2 text-slate-600 hover:bg-slate-50 transition-all"><i class="fa-solid fa-code"></i> Python 算法源码</button>
+                    <button onclick="switchTabUncert('analysis')" id="uncert-nav-analysis" class="py-3.5 px-8 flex items-center gap-2 text-slate-600 hover:bg-slate-50 transition-all"><i class="fa-solid fa-chart-pie"></i> 综合对比推荐</button>
+                </nav>
+
+                <section id="uncert-tab-sandbox" class="animate-fadeIn flex flex-col gap-6">
+                    <div class="flex flex-col lg:flex-row gap-6">
+                        <div class="w-full lg:w-1/2 compact-card flex flex-col">
+                            <div class="card-header"><span class="text-blue-600"><i class="fa-solid fa-pen-to-square mr-2"></i> 益损矩阵极速调节盘 (万元/月)</span>
+                                <button onclick="resetMatrixUncert()" class="text-xs font-normal bg-slate-100 text-slate-500 hover:text-blue-600 hover:bg-blue-50 px-3 py-1 rounded border shadow-sm transition-all"><i class="fa-solid fa-rotate-left"></i> 还原例题9-1</button>
+                            </div>
+                            <div class="flex-grow flex flex-col justify-center">
+                                <div id="uncert-matrix-inputs" class="p-2"></div>
+                            </div>
+                            <div class="mt-6 pt-4 border-t border-slate-200">
+                                <label class="text-sm font-bold text-slate-600 flex justify-between items-center">
+                                    <span><i class="fa-solid fa-sliders text-blue-500 mr-1"></i> 折中系数 $\beta$ (仅折中准则使用)</span>
+                                    <span class="text-blue-600 font-mono bg-blue-50 px-2 py-0.5 rounded border border-blue-200 shadow-sm" id="uncert-beta-display">0.60</span>
+                                </label>
+                                <div class="flex items-center mt-3">
+                                    <span class="text-xs text-slate-400 mr-2">偏悲观(0)</span>
+                                    <input type="range" id="uncert-beta-slider" min="0" max="1" step="0.01" value="0.6" class="flex-grow scale-slider" oninput="updateBetaUncert(this.value)">
+                                    <span class="text-xs text-slate-400 ml-2">偏乐观(1)</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="w-full lg:w-1/2 compact-card flex flex-col">
+                            <div class="card-header"><span class="text-slate-800"><i class="fa-solid fa-chart-area text-blue-500 mr-2"></i> 方案收益分布与动态折中期望</span></div>
+                            <div class="flex-grow relative min-h-[300px] w-full" id="uncert-sandbox-chart-container"><canvas id="uncert-sandboxChart"></canvas></div>
+                        </div>
+                    </div>
+
+                    <div class="compact-card flex flex-col bg-slate-50/50">
+                        <div class="card-header"><span class="text-slate-800"><i class="fa-solid fa-bolt text-amber-500 mr-2"></i> 5大准则底层计算过程与实时结论白盒化</span></div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" id="uncert-results-container">
+                            </div>
+                    </div>
+                </section>
+
+                <section id="uncert-tab-steps" class="hidden compact-card py-8 px-10">
+                    <div class="flex gap-3 mb-8 border-b pb-4 overflow-x-auto">
+                        <button onclick="showStepUncert(1)" class="uncert-step-btn step-btn-active px-5 py-2.5 rounded-lg text-sm font-bold border transition-all whitespace-nowrap">1. 悲观准则</button>
+                        <button onclick="showStepUncert(2)" class="uncert-step-btn px-5 py-2.5 rounded-lg text-sm font-bold border transition-all text-slate-600 bg-slate-50 hover:bg-slate-100 whitespace-nowrap">2. 乐观准则</button>
+                        <button onclick="showStepUncert(3)" class="uncert-step-btn px-5 py-2.5 rounded-lg text-sm font-bold border transition-all text-slate-600 bg-slate-50 hover:bg-slate-100 whitespace-nowrap">3. 折中准则</button>
+                        <button onclick="showStepUncert(4)" class="uncert-step-btn px-5 py-2.5 rounded-lg text-sm font-bold border transition-all text-slate-600 bg-slate-50 hover:bg-slate-100 whitespace-nowrap">4. 等可能准则</button>
+                        <button onclick="showStepUncert(5)" class="uncert-step-btn px-5 py-2.5 rounded-lg text-sm font-bold border transition-all text-slate-600 bg-slate-50 hover:bg-slate-100 whitespace-nowrap">5. 遗憾准则</button>
+                    </div>
+                    <div id="uncert-step-content" class="min-h-[400px]"></div>
+                </section>
+
+                <section id="uncert-tab-code" class="hidden bg-[#1e1e1e] p-10 rounded-xl shadow-xl text-white border border-slate-800">
+                    <div class="flex justify-between items-center mb-6"><h3 class="text-xl font-bold flex items-center gap-3"><i class="fa-brands fa-python text-yellow-400"></i> 不确定型决策 5大算法底层实现</h3></div>
+<pre class="rounded-lg overflow-hidden text-[14px] m-0 p-6 bg-black/50 shadow-inner"><code class="language-python">import numpy as np
+
+def uncertainty_decision_analysis(payoff_matrix, beta=0.6):
+    """
+    不确定型决策五大准则计算引擎
+    输入: payoff_matrix (各方案在不同状态下的益损值矩阵), beta (折中系数)
+    输出: 5种准则下的最优方案索引
+    """
+    matrix = np.array(payoff_matrix)
+    
+    # 1. 悲观准则 (Max-Min, 小中取大)
+    pes_min_vals = np.min(matrix, axis=1)
+    best_pes = np.argmax(pes_min_vals)
+    
+    # 2. 乐观准则 (Max-Max, 大中取大)
+    opt_max_vals = np.max(matrix, axis=1)
+    best_opt = np.argmax(opt_max_vals)
+    
+    # 3. 折中准则 (Hurwicz准则)
+    hurwicz_vals = beta * opt_max_vals + (1 - beta) * pes_min_vals
+    best_hur = np.argmax(hurwicz_vals)
+    
+    # 4. 等可能准则 (Laplace准则)
+    laplace_vals = np.mean(matrix, axis=1)
+    best_lap = np.argmax(laplace_vals)
+    
+    # 5. 遗憾准则 (Minimax Regret)
+    # 首先求每一列(每种状态)的最大益损值
+    col_max = np.max(matrix, axis=0) 
+    # 构造后悔值矩阵 (某状态最大收益 - 当前方案收益)
+    regret_matrix = col_max - matrix
+    # 求每个方案的最大后悔值
+    max_regrets = np.max(regret_matrix, axis=1)
+    # 在最大后悔值中取最小
+    best_reg = np.argmin(max_regrets)
+    
+    return best_pes, best_opt, best_hur, best_lap, best_reg
+
+# ================= 运行例题 9-1 数据 =================
+payoff_data = [
+    [110, 50, 40], # A1: 大型仓库
+    [70,  80, 50], # A2: 中型仓库
+    [30,  60, 70]  # A3: 小型仓库
+]
+res = uncertainty_decision_analysis(payoff_data, beta=0.6)
+alts = ["A1(大型)", "A2(中型)", "A3(小型)"]
+print("悲观准则最优:", alts[res[0]])
+print("乐观准则最优:", alts[res[1]])
+print("折中准则最优:", alts[res[2]])
+print("等可能最优  :", alts[res[3]])
+print("遗憾准则最优:", alts[res[4]])
+</code></pre>
+                </section>
+
+                <section id="uncert-tab-analysis" class="hidden space-y-6">
+                    <div class="bg-blue-50 border border-blue-200 text-blue-800 p-4 rounded-lg text-sm flex items-center justify-between shadow-sm">
+                        <span class="flex items-center"><i class="fa-solid fa-circle-info mr-2 text-xl"></i>下方报告展示了您在沙盒中设定的益损矩阵下的最终综合决策建议。</span>
+                    </div>
+                    <div class="flex flex-col xl:flex-row gap-6">
+                        <div class="w-full xl:w-1/2 compact-card flex flex-col">
+                            <div class="card-header"><span class="text-slate-800"><i class="fa-solid fa-table text-blue-500 mr-2"></i>表 9-9：不同准则所做决策方案的对比</span></div>
+                            <div class="overflow-x-auto mt-2 flex-grow">
+                                <table class="w-full text-center academic-table">
+                                    <thead><tr><th>决策方法</th><th class="bg-blue-50 text-blue-800">最优方案推荐</th><th>期望/对应收益 (万元/月)</th></tr></thead>
+                                    <tbody id="uncert-analysis-tbody"></tbody>
+                                </table>
+                            </div>
+                            <div id="uncert-final-recommendation" class="mt-4 p-4 rounded-lg text-center font-bold text-lg shadow-inner"></div>
+                        </div>
+                        <div class="w-full xl:w-1/2 compact-card flex flex-col">
+                            <div class="card-header"><span class="text-slate-800"><i class="fa-solid fa-chart-bar text-emerald-500 mr-2"></i>方案得分全景对比图</span></div>
+                            <div class="flex-grow relative min-h-[300px] w-full" id="uncert-analysis-chart-container"><canvas id="uncert-analysisChart"></canvas></div>
+                            <div class="text-xs text-slate-400 text-center mt-2">注：遗憾准则的得分为“后悔值”，值越低越优。柱状图已做倒数/负值处理以统一“越高越好”的视觉效果。</div>
+                        </div>
+                    </div>
+                </section>
+            </div>
             <div id="app-gm" class="app-container space-y-6">
                 <nav class="bg-white shadow-sm flex justify-center gap-8 text-base rounded-lg border overflow-hidden">
                     <button onclick="switchTabGM('sandbox')" id="gm-nav-sandbox" class="nav-active py-3.5 px-8 flex items-center gap-2"><i class="fa-solid fa-flask"></i> 动态演示</button>
@@ -589,9 +722,9 @@ print("最终权重:", np.round(final_w, 4))</code></pre>
         };
 
         // ================= 顶层路由控制 =================
-        let currentApp = 'gm';
+        let currentApp = 'uncert';
         function handleAppSelect(val) {
-            if (['gm', 'ahp', 'gahp'].includes(val)) {
+            if (['gm', 'ahp', 'gahp', 'uncert'].includes(val)) {
                 switchApp(val);
             } else if (val.startsWith('sd_')) {
                 let idx = val === 'sd_pos' ? 0 : (val === 'sd_neg' ? 1 : 2);
@@ -612,17 +745,231 @@ print("最终权重:", np.round(final_w, 4))</code></pre>
             document.getElementById('app-' + appId).classList.remove('hidden');
             
             let select = document.getElementById('main-app-selector');
-            if(appId === 'gm' || appId === 'ahp' || appId === 'gahp') select.value = appId;
+            if(appId === 'gm' || appId === 'ahp' || appId === 'gahp' || appId === 'uncert') select.value = appId;
             else if(appId === 'sd') select.value = sdState.modelIndex === 0 ? 'sd_pos' : (sdState.modelIndex === 1 ? 'sd_neg' : 'sd_sec');
 
             if(appId === 'gm') { updateSandboxGM(); if(!document.getElementById('gm-tab-analysis').classList.contains('hidden')) renderAnalysisGM(); }
             if(appId === 'ahp') { updateSandboxAHP(); if(!document.getElementById('ahp-tab-analysis').classList.contains('hidden')) renderAnalysisAHP(); }
             if(appId === 'gahp') { updateGAHPExpert1(); } 
             if(appId === 'sd') { updateSDAll(); }
+            if(appId === 'uncert') { updateSandboxUncert(); if(!document.getElementById('uncert-tab-analysis').classList.contains('hidden')) renderAnalysisUncert(); }
         }
 
         // =========================================================
-        // 核心一：GM(1,1) JS 引擎
+        // 新增核心：不确定型决策 (Uncert) JS 引擎
+        // =========================================================
+        const UNCERT_ALTS = ["A1(大型)", "A2(中型)", "A3(小型)"];
+        const UNCERT_STATES = ["T1(大)", "T2(中)", "T3(小)"];
+        const UNCERT_DEFAULT_MATRIX = [[110, 50, 40], [70, 80, 50], [30, 60, 70]];
+        let uncertState = {
+            matrix: JSON.parse(JSON.stringify(UNCERT_DEFAULT_MATRIX)),
+            beta: 0.60
+        };
+        let uncertAnalysisChart, uncertSandboxChart;
+
+        function calculateUncert() {
+            let m = uncertState.matrix; let beta = uncertState.beta; let states = m[0].length;
+            
+            // 1. 悲观
+            let mins = m.map(row => Math.min(...row)); let maxMin = Math.max(...mins);
+            let pesBest = mins.map((v, i) => v === maxMin ? i : -1).filter(v => v !== -1);
+            
+            // 2. 乐观
+            let maxs = m.map(row => Math.max(...row)); let maxMax = Math.max(...maxs);
+            let optBest = maxs.map((v, i) => v === maxMax ? i : -1).filter(v => v !== -1);
+            
+            // 3. 折中
+            let hurwicz = m.map((row, i) => beta * maxs[i] + (1 - beta) * mins[i]); let maxHurwicz = Math.max(...hurwicz);
+            let hurBest = hurwicz.map((v, i) => Math.abs(v - maxHurwicz) < 0.001 ? i : -1).filter(v => v !== -1);
+            
+            // 4. 等可能
+            let laplace = m.map(row => row.reduce((a,b) => a+b, 0) / states); let maxLaplace = Math.max(...laplace);
+            let lapBest = laplace.map((v, i) => Math.abs(v - maxLaplace) < 0.001 ? i : -1).filter(v => v !== -1);
+            
+            // 5. 遗憾
+            let colMaxs = []; for(let j=0; j<states; j++) colMaxs.push(Math.max(...m.map(row => row[j])));
+            let regretMatrix = m.map(row => row.map((v, j) => colMaxs[j] - v));
+            let maxRegrets = regretMatrix.map(row => Math.max(...row)); let minMaxRegret = Math.min(...maxRegrets);
+            let regBest = maxRegrets.map((v, i) => v === minMaxRegret ? i : -1).filter(v => v !== -1);
+
+            return { mins, maxMin, pesBest, maxs, maxMax, optBest, hurwicz, maxHurwicz, hurBest, laplace, maxLaplace, lapBest, regretMatrix, maxRegrets, minMaxRegret, regBest };
+        }
+
+        function renderUncertMatrixInputs() {
+            let html = `<div class="grid grid-cols-4 gap-3 text-center items-center">
+                <div class="font-bold text-slate-500 bg-slate-50 py-2 rounded shadow-sm text-sm">方案 \\ 状态</div>
+                <div class="font-bold text-blue-600 bg-blue-50 py-2 rounded shadow-sm">T1(大)</div>
+                <div class="font-bold text-blue-600 bg-blue-50 py-2 rounded shadow-sm">T2(中)</div>
+                <div class="font-bold text-blue-600 bg-blue-50 py-2 rounded shadow-sm">T3(小)</div>`;
+            for (let i = 0; i < 3; i++) {
+                html += `<div class="font-bold text-slate-700 bg-slate-100 py-4 rounded shadow-sm">${UNCERT_ALTS[i]}</div>`;
+                for (let j = 0; j < 3; j++) {
+                    // 全新微交互组件：数字框 + 滑块
+                    html += `
+                    <div class="flex flex-col gap-1.5 p-1 border border-slate-200 rounded-lg bg-white shadow-sm hover:border-blue-400 hover:shadow transition-all group">
+                        <input type="number" class="w-full px-1 py-1 text-center text-xl font-mono font-bold text-slate-800 outline-none rounded bg-transparent" value="${uncertState.matrix[i][j]}" onchange="updateUncertMatrix(${i}, ${j}, this.value)">
+                        <div class="px-1.5 pb-1 opacity-60 group-hover:opacity-100 transition-opacity">
+                            <input type="range" min="-20" max="150" step="1" value="${uncertState.matrix[i][j]}" class="scale-slider" style="height:3px;" oninput="updateUncertMatrix(${i}, ${j}, this.value); this.previousElementSibling.previousElementSibling.value=this.value;">
+                        </div>
+                    </div>`;
+                }
+            }
+            html += `</div>`;
+            document.getElementById('uncert-matrix-inputs').innerHTML = html;
+        }
+
+        function updateUncertMatrix(i, j, val) {
+            let v = parseFloat(val); if(isNaN(v)) return;
+            uncertState.matrix[i][j] = v; updateSandboxUncert();
+        }
+        function updateBetaUncert(val) {
+            uncertState.beta = parseFloat(val); document.getElementById('uncert-beta-display').innerText = uncertState.beta.toFixed(2);
+            updateSandboxUncert();
+        }
+        function resetMatrixUncert() {
+            uncertState.matrix = JSON.parse(JSON.stringify(UNCERT_DEFAULT_MATRIX)); uncertState.beta = 0.60;
+            document.getElementById('uncert-beta-slider').value = 0.6; document.getElementById('uncert-beta-display').innerText = "0.60";
+            renderUncertMatrixInputs(); updateSandboxUncert();
+        }
+
+        function switchTabUncert(tabId) {
+            document.querySelectorAll('#app-uncert section').forEach(s => s.classList.add('hidden')); document.getElementById(`uncert-tab-${tabId}`).classList.remove('hidden');
+            document.querySelectorAll('#app-uncert .nav-active').forEach(l => { l.classList.remove('nav-active'); l.classList.add('text-slate-600', 'bg-transparent'); });
+            let act = document.getElementById(`uncert-nav-${tabId}`); act.classList.remove('text-slate-600', 'bg-transparent'); act.classList.add('nav-active');
+            if(tabId === 'sandbox') updateSandboxUncert();
+            if(tabId === 'steps') showStepUncert(1);
+            if(tabId === 'analysis') renderAnalysisUncert();
+        }
+
+        function updateSandboxUncert() {
+            if(!document.getElementById('uncert-matrix-inputs').innerHTML) renderUncertMatrixInputs();
+            const res = calculateUncert();
+            const formatArr = (arr) => arr.map(v => v.toFixed(0)).join(', ');
+            
+            const createCard = (title, icon, color, bestIdxs, bestVal, detailStr, colSpan="col-span-1") => `
+                <div class="bg-white border rounded-xl p-4 shadow-sm flex flex-col justify-between border-l-4 border-l-${color}-500 hover:shadow-md transition-all ${colSpan}">
+                    <div>
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="font-bold text-slate-700 text-lg"><i class="${icon} text-${color}-500 mr-1.5"></i> ${title}</span>
+                        </div>
+                        <div class="flex justify-between items-end mb-2">
+                            <div class="text-2xl font-black text-${color}-600">${bestIdxs.map(i => UNCERT_ALTS[i].split('(')[0]).join(' / ')}</div>
+                            <div class="text-sm font-bold text-slate-400">推演最优: <span class="text-xl text-slate-700">${bestVal.toFixed(2)}</span></div>
+                        </div>
+                    </div>
+                    ${detailStr}
+                </div>`;
+            
+            let html = "";
+            let detailPes = `<div class="mt-3 pt-3 border-t border-slate-100 text-[13px] text-slate-500 bg-slate-50 px-2 rounded leading-relaxed font-mono">1.提取各行最小收益：[${formatArr(res.mins)}]<br>2.取出其中最大极值：<span class="font-bold text-slate-700">${res.maxMin.toFixed(2)}</span></div>`;
+            html += createCard("悲观准则 (小中取大)", "fa-solid fa-cloud-showers-heavy", "slate", res.pesBest, res.maxMin, detailPes);
+            
+            let detailOpt = `<div class="mt-3 pt-3 border-t border-slate-100 text-[13px] text-slate-500 bg-slate-50 px-2 rounded leading-relaxed font-mono">1.提取各行最大收益：[${formatArr(res.maxs)}]<br>2.取出其中最大极值：<span class="font-bold text-slate-700">${res.maxMax.toFixed(2)}</span></div>`;
+            html += createCard("乐观准则 (大中取大)", "fa-solid fa-sun", "red", res.optBest, res.maxMax, detailOpt);
+            
+            let detailHur = `<div class="mt-3 pt-3 border-t border-slate-100 text-[13px] text-slate-500 bg-slate-50 px-2 rounded leading-relaxed font-mono">1.依 $\\beta$ 加权收益：[${formatArr(res.hurwicz)}]<br>2.取出其中最大极值：<span class="font-bold text-slate-700">${res.maxHurwicz.toFixed(2)}</span></div>`;
+            html += createCard(`折中准则 (β=${uncertState.beta.toFixed(2)})`, "fa-solid fa-scale-balanced", "amber", res.hurBest, res.maxHurwicz, detailHur);
+            
+            let detailLap = `<div class="mt-3 pt-3 border-t border-slate-100 text-[13px] text-slate-500 bg-slate-50 px-2 rounded leading-relaxed font-mono">1.求各行平均期望值：[${formatArr(res.laplace)}]<br>2.取出其中最大极值：<span class="font-bold text-slate-700">${res.maxLaplace.toFixed(2)}</span></div>`;
+            html += createCard("等可能准则", "fa-solid fa-dice", "blue", res.lapBest, res.maxLaplace, detailLap);
+            
+            let regretStr = res.regretMatrix.map((r, i) => `<span class="inline-block mr-2 text-slate-600">A${i+1}[${formatArr(r)}]</span>`).join('');
+            let detailReg = `<div class="mt-3 pt-3 border-t border-slate-100 text-[13px] text-slate-500 bg-slate-50 px-2 rounded leading-relaxed font-mono">1.动态遗憾矩阵：<br>${regretStr}<br>2.各行最大后悔值：[${formatArr(res.maxRegrets)}]<br>3.取后悔值里的<span class="text-emerald-600 font-bold mx-1">最小值</span>：<span class="font-bold text-slate-700">${res.minMaxRegret.toFixed(2)}</span></div>`;
+            html += createCard("遗憾准则 (最小化最大后悔值)", "fa-solid fa-face-frown-open", "emerald", res.regBest, res.minMaxRegret, detailReg, "col-span-1 md:col-span-2 lg:col-span-2");
+            
+            document.getElementById('uncert-results-container').innerHTML = html;
+
+            // ===== 渲染沙盒可视化图表 =====
+            const m = uncertState.matrix;
+            if(uncertSandboxChart) uncertSandboxChart.destroy();
+            uncertSandboxChart = new Chart(document.getElementById('uncert-sandboxChart').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: UNCERT_ALTS,
+                    datasets: [
+                        { label: 'T1 状态收益', data: [m[0][0], m[1][0], m[2][0]], backgroundColor: 'rgba(59, 130, 246, 0.85)', borderRadius: 4 },
+                        { label: 'T2 状态收益', data: [m[0][1], m[1][1], m[2][1]], backgroundColor: 'rgba(16, 185, 129, 0.85)', borderRadius: 4 },
+                        { label: 'T3 状态收益', data: [m[0][2], m[1][2], m[2][2]], backgroundColor: 'rgba(139, 92, 246, 0.85)', borderRadius: 4 },
+                        { label: '折中准则期望 (依据 β 联动)', data: res.hurwicz, type: 'line', borderColor: '#f59e0b', backgroundColor: '#f59e0b', borderWidth: 3, pointRadius: 6, pointBackgroundColor: '#fff', tension: 0.1 }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 10, padding: 15 } } }, scales: { y: { grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } } }
+            });
+
+            if(!document.getElementById('uncert-tab-analysis').classList.contains('hidden')) renderAnalysisUncert();
+        }
+
+        function renderAnalysisUncert() {
+            const res = calculateUncert();
+            const getNames = (idxs) => idxs.map(i => UNCERT_ALTS[i].split('(')[0]).join(' 和 ');
+            
+            let tbody = `
+                <tr class="hover:bg-slate-50"><td>悲观准则</td><td class="font-bold text-slate-800">${getNames(res.pesBest)}</td><td>${res.maxMin.toFixed(2)}</td></tr>
+                <tr class="hover:bg-slate-50"><td>乐观准则</td><td class="font-bold text-slate-800">${getNames(res.optBest)}</td><td>${res.maxMax.toFixed(2)}</td></tr>
+                <tr class="hover:bg-slate-50"><td>折中准则 (β=${uncertState.beta.toFixed(2)})</td><td class="font-bold text-slate-800">${getNames(res.hurBest)}</td><td>${res.maxHurwicz.toFixed(2)}</td></tr>
+                <tr class="hover:bg-slate-50"><td>等可能准则</td><td class="font-bold text-slate-800">${getNames(res.lapBest)}</td><td>${res.maxLaplace.toFixed(2)}</td></tr>
+                <tr class="hover:bg-slate-50"><td>遗憾准则</td><td class="font-bold text-slate-800">${getNames(res.regBest)}</td><td>${res.minMaxRegret.toFixed(2)} (后悔值)</td></tr>
+            `;
+            document.getElementById('uncert-analysis-tbody').innerHTML = tbody;
+
+            // 统计哪个方案胜出次数最多
+            let counts = [0, 0, 0];
+            [res.pesBest, res.optBest, res.hurBest, res.lapBest, res.regBest].forEach(arr => { arr.forEach(idx => counts[idx]++); });
+            let maxCount = Math.max(...counts);
+            let overallBest = counts.map((v, i) => v === maxCount ? UNCERT_ALTS[i].split('(')[0] : null).filter(v => v);
+            
+            document.getElementById('uncert-final-recommendation').innerHTML = `
+                <span class="text-slate-500 text-sm block mb-1">根据以上五种决策准则的综合交叉比对：</span>
+                <span class="text-blue-700 text-xl">强烈建议选择方案 <span class="bg-yellow-200 px-2 py-0.5 rounded">${overallBest.join(' 或 ')}</span></span>
+                <span class="text-slate-500 text-sm block mt-1">（在 ${counts.reduce((a,b)=>a+b,0)} 次判定中占优了 ${maxCount} 次）</span>
+            `;
+
+            // 图表渲染
+            if(uncertAnalysisChart) uncertAnalysisChart.destroy();
+            document.getElementById('uncert-analysis-chart-container').innerHTML = '<canvas id="uncert-analysisChart"></canvas>';
+            
+            // 为了视觉上的统一（越高越好），将遗憾值取负并加上常数，仅作图表展示
+            let maxRegVal = Math.max(...res.maxRegrets);
+            let visualRegrets = res.maxRegrets.map(v => maxRegVal - v);
+
+            uncertAnalysisChart = new Chart(document.getElementById('uncert-analysisChart').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: UNCERT_ALTS,
+                    datasets: [
+                        { label: '悲观 (最小益损)', data: res.mins, backgroundColor: '#94a3b8', borderRadius: 4 },
+                        { label: '乐观 (最大益损)', data: res.maxs, backgroundColor: '#ef4444', borderRadius: 4 },
+                        { label: '折中 (加权益损)', data: res.hurwicz, backgroundColor: '#f59e0b', borderRadius: 4 },
+                        { label: '等可能 (平均益损)', data: res.laplace, backgroundColor: '#3b82f6', borderRadius: 4 },
+                        { label: '遗憾 (反向相对得分)', data: visualRegrets, backgroundColor: '#10b981', borderRadius: 4 }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 10, padding: 10 } } }, scales: { y: { grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } } }
+            });
+        }
+
+        const UNCERT_STEP_DATA = {
+            1: { title: "1. 悲观准则 (小中取大)", concept: "决策者对未来抱保守、悲观态度。首先找出每个方案在最坏自然状态下的益损值（最小值），然后在这些最小值中选择一个最大值作为最优决策。", points: ["核心思想：从最坏的结果中争取最好的结果。", "计算步骤：先求每行最小值，再求整体最大值。"], math: "\\max_i (\\min_j [C_{ij}])", demo: "在所有可能发生的最糟糕情况里，挑一个损失/收益相对最不惨的方案。", tip: "适用于经济实力较弱、承受不起失败风险的保守型决策。" },
+            2: { title: "2. 乐观准则 (大中取大)", concept: "决策者充满乐观与冒险精神，不放弃任何一个获得最大好结果的机会。直接找出所有方案、所有状态下的全局最大益损值。", points: ["核心思想：对客观情况总是抱乐观的态度，考虑最有利的情况。", "计算步骤：先求每行最大值，再求整体最大值。"], math: "\\max_i (\\max_j [C_{ij}])", demo: "只盯着收益最高的那一个可能结果冲刺，忽略其他风险。", tip: "适用于经济实力较强、愿意冒更大风险获取更高收益的激进型决策。" },
+            3: { title: "3. 折中准则 (Hurwicz准则)", concept: "介于悲观与乐观之间，引入一个折中系数 $\\beta$ (0~1)。$\\beta$ 越接近 1 越乐观，越接近 0 越悲观。", points: ["核心思想：综合考虑最好和最坏的情况。", "计算步骤：计算加权益损值 $H_i = \\beta O_{max} + (1-\\beta) O_{min}$。"], math: "H_i = \\beta \\max_j[C_{ij}] + (1-\\beta)\\min_j[C_{ij}]", demo: "动态调和：您可以返回沙盒调节 $\\beta$ 滑块观察结果的变化。", tip: "这是现实中最常用的一种妥协模型，能够量化决策者的主观风险偏好。" },
+            4: { title: "4. 等可能准则 (Laplace准则)", concept: "决策者对所有自然状态一视同仁，认为它们发生的概率完全相等。将不确定型转化为等概率的风险型决策。", points: ["核心思想：没有理由认为哪种状态更容易发生，故假定概率均为 $1/n$。", "计算步骤：求每行算术平均值，取最大。"], math: "\\max_i \\left( \\frac{1}{n} \\sum_{j=1}^n C_{ij} \\right)", demo: "如果3种状态，每种发生概率均为 33.3%，看哪个方案期望最高。", tip: "拉普拉斯准则是一种“理性的无知”处理方式。" },
+            5: { title: "5. 遗憾准则 (后悔值准则)", concept: "决策者事后发现若当时选了别的好方案会产生“后悔”。后悔值 = 某状态下的最大收益 - 当前方案收益。求最小化最大后悔值的方案。", points: ["核心思想：避免将来因为选错而极度后悔。", "计算步骤：先构造遗憾矩阵，再求每行最大遗憾值，最后取其中最小。"], math: "\\min_i \\left( \\max_j [\\max_k C_{kj} - C_{ij}] \\right)", demo: "先看各列(状态)的最高分，用最高分减去你的得分即为遗憾。选一个不管发生啥事，自己都不至于太后悔的方案。", tip: "适用于极其厌恶“踏空”或“决策失误心理落差”的决策者。" }
+        };
+
+        function showStepUncert(idx) {
+            document.querySelectorAll('.uncert-step-btn').forEach((b, i) => { b.classList.toggle('step-btn-active', (i+1)===idx); b.classList.toggle('text-slate-600', (i+1)!==idx); b.classList.toggle('bg-slate-50', (i+1)!==idx); }); 
+            let d = UNCERT_STEP_DATA[idx];
+            let htmlContent = `<div class="space-y-6 animate-fadeIn">
+                <h2 class="text-2xl font-bold text-slate-800 flex items-center gap-3"><span class="bg-blue-600 text-white w-8 h-8 rounded text-base flex items-center justify-center shadow-md">${idx}</span> ${d.title}</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="space-y-5"><div><span class="text-sm font-bold text-slate-500 uppercase tracking-wider">理论概念</span><p class="text-slate-700 text-base mt-2 leading-relaxed">${d.concept}</p></div><div><span class="text-sm font-bold text-slate-500 uppercase tracking-wider">核心要点</span><ul class="list-disc list-inside text-base text-slate-700 mt-2 space-y-1">${d.points.map(p=>`<li>${p}</li>`).join('')}</ul></div><div class="bg-blue-50 border border-blue-200 text-blue-800 p-4 rounded-lg text-sm shadow-sm mt-4"><i class="fa-solid fa-lightbulb text-yellow-500 mr-2 text-lg"></i><b>教学提示：</b>${d.tip}</div></div>
+                    <div class="space-y-5"><div><span class="text-sm font-bold text-slate-500 uppercase tracking-wider">核心数学解析</span><div class="math-card text-center text-3xl py-8 shadow-inner">$$${d.math}$$</div></div><div><span class="text-sm font-bold text-slate-500 uppercase tracking-wider">通俗演算示例</span><div class="p-4 bg-slate-50 border rounded-lg font-mono text-base text-slate-600 shadow-sm mt-2">${d.demo}</div></div></div>
+                </div></div>`;
+            MathRenderer.renderStep('uncert-step-content', htmlContent);
+        }
+
+        // =========================================================
+        // 原有核心：GM(1,1) JS 引擎
         // =========================================================
         const RAW_DATA_GM = [6986, 8013, 9353, 10821, 12304, 13755];
         const BASE_YEAR_GM = 2019;
@@ -749,7 +1096,7 @@ print("最终权重:", np.round(final_w, 4))</code></pre>
         }
 
         // =========================================================
-        // 核心二：AHP JS 引擎
+        // 原有核心：AHP JS 引擎
         // =========================================================
         const AHP_CRITERIA = ["C1(便利)", "C2(经济)", "C3(安全)", "C4(迅速)"]; const AHP_ALTS = ["B1(铁路)", "B2(公路)", "B3(水路)", "B4(航空)"];
         const AHP_RI_ARRAY = [0, 0, 0.52, 0.89, 1.12, 1.26, 1.36, 1.41, 1.46, 1.49];
@@ -867,7 +1214,7 @@ print("最终权重:", np.round(final_w, 4))</code></pre>
         }
 
         // =========================================================
-        // 核心三：群组 AHP JS 引擎
+        // 原有核心：群组 AHP JS 引擎 (带核心Bug修复)
         // =========================================================
         const GAHP_INDICATORS = [
             { id: "B11", name: "配送成本", parent: "B1:经济" }, { id: "B12", name: "服务平衡", parent: "B1:经济" },
@@ -884,8 +1231,14 @@ print("最终权重:", np.round(final_w, 4))</code></pre>
         let gahpLambdas = [...GAHP_DEFAULT_LAMBDAS];
 
         const w_other = GAHP_INDICATORS.map((_, i) => (GAHP_W_FINAL[i] - 0.15 * EXP1_W_DEFAULT[i]) / 0.85);
-        let gahpExpertVectors = [[]]; 
-        for(let i=1; i<10; i++) gahpExpertVectors.push([...w_other]);
+        let gahpExpertVectors = [[]]; // Index 0 将由 Expert 1 (用户可控) 填充
+        
+        // 【核心修复点】为专家2至10生成具有合理偏差的独立意见向量，避免权重调节失效
+        for(let i=1; i<10; i++) {
+            let varied = w_other.map((w, j) => w * (1 + Math.sin(i * j) * 0.3)); // 引入周期性自然波动
+            let sum = varied.reduce((a, b) => a + b, 0);
+            gahpExpertVectors.push(varied.map(w => w / sum)); // 归一化后存入
+        }
 
         const getInitExp1Mat = () => ({
             BA: [[1, 1/3, 1/3, 1], [3, 1, 1, 3], [3, 1, 1, 3], [1, 1/3, 1/3, 1]],
@@ -1003,9 +1356,13 @@ print("最终权重:", np.round(final_w, 4))</code></pre>
             MathRenderer.render('gahp-math-formula-group', `$$W_{j} = \\lambda_{1}W_{j1} + \\lambda_{2}W_{j2} + \\dots + \\lambda_{10}W_{j10}$$`);
             const finalW = GAHP_INDICATORS.map((_, indIdx) => normalizedL.reduce((sum, l, expIdx) => sum + l * gahpExpertVectors[expIdx][indIdx], 0));
             
-            if(gahpMainChart) gahpMainChart.destroy();
-            document.getElementById('gahp-mainChart-container').innerHTML = '<canvas id="gahp-mainChart"></canvas>';
-            gahpMainChart = new Chart(document.getElementById('gahp-mainChart').getContext('2d'), { type: 'bar', data: { labels: GAHP_INDICATORS.map(ind => ind.name), datasets: [{ label: '指标综合权重', data: finalW, backgroundColor: '#3b82f6', borderRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, max: 0.15, grid: { color: '#f1f5f9' } }, y: { grid: { display: false }, ticks: { font: { size: 12, weight: 'bold' } } } } } });
+            if(gahpMainChart) {
+                gahpMainChart.data.datasets[0].data = finalW;
+                gahpMainChart.update();
+            } else {
+                document.getElementById('gahp-mainChart-container').innerHTML = '<canvas id="gahp-mainChart"></canvas>';
+                gahpMainChart = new Chart(document.getElementById('gahp-mainChart').getContext('2d'), { type: 'bar', data: { labels: GAHP_INDICATORS.map(ind => ind.name), datasets: [{ label: '指标综合权重', data: finalW, backgroundColor: '#3b82f6', borderRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, max: 0.15, grid: { color: '#f1f5f9' } }, y: { grid: { display: false }, ticks: { font: { size: 12, weight: 'bold' } } } } } });
+            }
             
             window.gahpLastCalc = finalW;
             if(!document.getElementById('gahp-tab-analysis').classList.contains('hidden')) renderAnalysisGAHP();
@@ -1038,7 +1395,7 @@ print("最终权重:", np.round(final_w, 4))</code></pre>
         }
 
         // =========================================================
-        // 核心四：系统动力学 SD 
+        // 原有核心：系统动力学 SD 
         // =========================================================
         const SD_CONFIG = {
             models: [
@@ -1245,7 +1602,6 @@ print("最终权重:", np.round(final_w, 4))</code></pre>
         }
 
         function renderSDCharts() {
-            // 核心修复：切换例题时彻底销毁旧画布
             if(sdState.primaryChart) { sdState.primaryChart.destroy(); sdState.primaryChart = null; }
             if(sdState.secondaryChart) { sdState.secondaryChart.destroy(); sdState.secondaryChart = null; }
             
@@ -1307,7 +1663,6 @@ print("最终权重:", np.round(final_w, 4))</code></pre>
         function renderSDDiagram() {
             const m = getSDModel();
             
-            // 核心修复：DYNAMO 方程上下分离排布，彻底防止右侧溢出截断
             let eqsHtml = m.equations.map((eq, idx) => `
                 <div class="pt-5 pb-4 px-4 bg-slate-50 border border-slate-200 rounded-xl shadow-sm flex flex-col items-center w-full relative mt-5">
                     <div class="absolute -top-3.5 bg-blue-100 text-blue-800 rounded-lg px-3 py-0.5 shadow-sm border border-blue-200 whitespace-nowrap flex items-center justify-center gap-2 z-10">
@@ -1418,7 +1773,10 @@ print("最终权重:", np.round(final_w, 4))</code></pre>
             gmAnalysisChart = new Chart(document.getElementById('gm-analysisChart').getContext('2d'), { type: 'line', options: { ...commonOpts, plugins: { legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 10, padding: 15 } } } } });
             ahpSandboxChart = new Chart(document.getElementById('ahp-sandboxChart').getContext('2d'), { type: 'bar', data: { labels: AHP_ALTS, datasets: [{ label: '全局动态总得分', data: [0,0,0,0], backgroundColor: '#94a3b8', borderRadius: 6 }] }, options: { ...commonOpts, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, suggestedMax: 0.5, grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } } } });
             ahpRadarChart = new Chart(document.getElementById('ahp-radarChart').getContext('2d'), { type: 'radar', data: { labels: AHP_CRITERIA, datasets: [] }, options: { ...commonOpts, plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 12, padding: 15, font: { size: 14 } } } }, scales: { r: { beginAtZero: true, suggestedMax: 0.6 } } } });
-            gahpMainChart = new Chart(document.getElementById('gahp-mainChart').getContext('2d'), { type: 'bar', data: { labels: GAHP_INDICATORS.map(ind => ind.name), datasets: [{ label: '指标综合权重', data: [], backgroundColor: '#3b82f6', borderRadius: 6 }] }, options: { indexAxis: 'y', ...commonOpts, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, max: 0.15, grid: { color: '#f1f5f9' } }, y: { grid: { display: false }, ticks: { font: { size: 12, weight: 'bold' } } } } } });
+            
+            // 为了避免未渲染图表报错，在初始化时创建空的图表实例
+            gahpMainChart = new Chart(document.getElementById('gahp-mainChart') || document.createElement('canvas'), { type: 'bar', data: {datasets: []} });
+            uncertAnalysisChart = new Chart(document.getElementById('uncert-analysisChart') || document.createElement('canvas'), { type: 'bar', data: {datasets: []} });
 
             hljs.highlightAll();
             
@@ -1427,8 +1785,8 @@ print("最终权重:", np.round(final_w, 4))</code></pre>
             
             initSDParamsForCurrentModel(); bindSDDiagramInteraction();
             
-            document.getElementById('main-app-selector').value = 'gm';
-            switchApp('gm');
+            document.getElementById('main-app-selector').value = 'uncert';
+            switchApp('uncert');
         };
     </script>
 </body>

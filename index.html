@@ -124,7 +124,7 @@
 
                         <div class="w-full lg:w-1/2 compact-card flex flex-col">
                             <div class="card-header"><span class="text-slate-800"><i class="fa-solid fa-chart-area text-blue-500 mr-2"></i> 方案收益分布与动态折中期望</span></div>
-                            <div class="flex-grow relative min-h-[300px] w-full" id="uncert-sandbox-chart-container"><canvas id="uncert-sandboxChart"></canvas></div>
+                            <div class="relative h-[220px] w-full my-auto" id="uncert-sandbox-chart-container"><canvas id="uncert-sandboxChart"></canvas></div>
                         </div>
                     </div>
 
@@ -804,12 +804,12 @@ print("最终权重:", np.round(final_w, 4))</code></pre>
             for (let i = 0; i < 3; i++) {
                 html += `<div class="font-bold text-slate-700 bg-slate-100 py-4 rounded shadow-sm">${UNCERT_ALTS[i]}</div>`;
                 for (let j = 0; j < 3; j++) {
-                    // 全新微交互组件：数字框 + 滑块
+                    // 全新微交互组件：数字框 + 滑块 (带有唯一ID的双向绑定)
                     html += `
                     <div class="flex flex-col gap-1.5 p-1 border border-slate-200 rounded-lg bg-white shadow-sm hover:border-blue-400 hover:shadow transition-all group">
-                        <input type="number" class="w-full px-1 py-1 text-center text-xl font-mono font-bold text-slate-800 outline-none rounded bg-transparent" value="${uncertState.matrix[i][j]}" onchange="updateUncertMatrix(${i}, ${j}, this.value)">
+                        <input type="number" id="uncert-num-${i}-${j}" class="w-full px-1 py-1 text-center text-xl font-mono font-bold text-slate-800 outline-none rounded bg-transparent" value="${uncertState.matrix[i][j]}" oninput="updateUncertMatrix(${i}, ${j}, this.value)">
                         <div class="px-1.5 pb-1 opacity-60 group-hover:opacity-100 transition-opacity">
-                            <input type="range" min="-20" max="150" step="1" value="${uncertState.matrix[i][j]}" class="scale-slider" style="height:3px;" oninput="updateUncertMatrix(${i}, ${j}, this.value); this.previousElementSibling.previousElementSibling.value=this.value;">
+                            <input type="range" id="uncert-rng-${i}-${j}" min="-20" max="150" step="1" value="${uncertState.matrix[i][j]}" class="scale-slider" style="height:3px;" oninput="updateUncertMatrix(${i}, ${j}, this.value)">
                         </div>
                     </div>`;
                 }
@@ -820,7 +820,15 @@ print("最终权重:", np.round(final_w, 4))</code></pre>
 
         function updateUncertMatrix(i, j, val) {
             let v = parseFloat(val); if(isNaN(v)) return;
-            uncertState.matrix[i][j] = v; updateSandboxUncert();
+            uncertState.matrix[i][j] = v;
+            
+            // 安全的双向绑定同步
+            let numEl = document.getElementById(`uncert-num-${i}-${j}`);
+            let rngEl = document.getElementById(`uncert-rng-${i}-${j}`);
+            if (numEl && parseFloat(numEl.value) !== v) numEl.value = v;
+            if (rngEl && parseFloat(rngEl.value) !== v) rngEl.value = v;
+            
+            updateSandboxUncert();
         }
         function updateBetaUncert(val) {
             uncertState.beta = parseFloat(val); document.getElementById('uncert-beta-display').innerText = uncertState.beta.toFixed(2);
@@ -879,22 +887,33 @@ print("最终权重:", np.round(final_w, 4))</code></pre>
             
             document.getElementById('uncert-results-container').innerHTML = html;
 
-            // ===== 渲染沙盒可视化图表 =====
+            // ===== 渲染沙盒可视化图表 (采用高性能更新模式) =====
             const m = uncertState.matrix;
-            if(uncertSandboxChart) uncertSandboxChart.destroy();
-            uncertSandboxChart = new Chart(document.getElementById('uncert-sandboxChart').getContext('2d'), {
-                type: 'bar',
-                data: {
-                    labels: UNCERT_ALTS,
-                    datasets: [
-                        { label: 'T1 状态收益', data: [m[0][0], m[1][0], m[2][0]], backgroundColor: 'rgba(59, 130, 246, 0.85)', borderRadius: 4 },
-                        { label: 'T2 状态收益', data: [m[0][1], m[1][1], m[2][1]], backgroundColor: 'rgba(16, 185, 129, 0.85)', borderRadius: 4 },
-                        { label: 'T3 状态收益', data: [m[0][2], m[1][2], m[2][2]], backgroundColor: 'rgba(139, 92, 246, 0.85)', borderRadius: 4 },
-                        { label: '折中准则期望 (依据 β 联动)', data: res.hurwicz, type: 'line', borderColor: '#f59e0b', backgroundColor: '#f59e0b', borderWidth: 3, pointRadius: 6, pointBackgroundColor: '#fff', tension: 0.1 }
-                    ]
-                },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 10, padding: 15 } } }, scales: { y: { grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } } }
-            });
+            if(uncertSandboxChart) {
+                uncertSandboxChart.data.datasets[0].data = [m[0][0], m[1][0], m[2][0]];
+                uncertSandboxChart.data.datasets[1].data = [m[0][1], m[1][1], m[2][1]];
+                uncertSandboxChart.data.datasets[2].data = [m[0][2], m[1][2], m[2][2]];
+                uncertSandboxChart.data.datasets[3].data = res.hurwicz;
+                uncertSandboxChart.update('none'); // 无动画顺滑更新
+            } else {
+                let canvasContainer = document.getElementById('uncert-sandbox-chart-container');
+                if(canvasContainer) {
+                    canvasContainer.innerHTML = '<canvas id="uncert-sandboxChart"></canvas>';
+                    uncertSandboxChart = new Chart(document.getElementById('uncert-sandboxChart').getContext('2d'), {
+                        type: 'bar',
+                        data: {
+                            labels: UNCERT_ALTS,
+                            datasets: [
+                                { label: 'T1 状态收益', data: [m[0][0], m[1][0], m[2][0]], backgroundColor: 'rgba(59, 130, 246, 0.85)', borderRadius: 4 },
+                                { label: 'T2 状态收益', data: [m[0][1], m[1][1], m[2][1]], backgroundColor: 'rgba(16, 185, 129, 0.85)', borderRadius: 4 },
+                                { label: 'T3 状态收益', data: [m[0][2], m[1][2], m[2][2]], backgroundColor: 'rgba(139, 92, 246, 0.85)', borderRadius: 4 },
+                                { label: '折中准则期望 (依据 β 联动)', data: res.hurwicz, type: 'line', borderColor: '#f59e0b', backgroundColor: '#f59e0b', borderWidth: 3, pointRadius: 6, pointBackgroundColor: '#fff', tension: 0.1 }
+                            ]
+                        },
+                        options: { animation: { duration: 200 }, responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 10, padding: 15 } } }, scales: { y: { grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } } }
+                    });
+                }
+            }
 
             if(!document.getElementById('uncert-tab-analysis').classList.contains('hidden')) renderAnalysisUncert();
         }
@@ -1358,10 +1377,13 @@ print("最终权重:", np.round(final_w, 4))</code></pre>
             
             if(gahpMainChart) {
                 gahpMainChart.data.datasets[0].data = finalW;
-                gahpMainChart.update();
+                gahpMainChart.update('none'); // 无动画顺滑更新
             } else {
-                document.getElementById('gahp-mainChart-container').innerHTML = '<canvas id="gahp-mainChart"></canvas>';
-                gahpMainChart = new Chart(document.getElementById('gahp-mainChart').getContext('2d'), { type: 'bar', data: { labels: GAHP_INDICATORS.map(ind => ind.name), datasets: [{ label: '指标综合权重', data: finalW, backgroundColor: '#3b82f6', borderRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, max: 0.15, grid: { color: '#f1f5f9' } }, y: { grid: { display: false }, ticks: { font: { size: 12, weight: 'bold' } } } } } });
+                let canvasContainer = document.getElementById('gahp-mainChart-container');
+                if(canvasContainer) {
+                    canvasContainer.innerHTML = '<canvas id="gahp-mainChart"></canvas>';
+                    gahpMainChart = new Chart(document.getElementById('gahp-mainChart').getContext('2d'), { type: 'bar', data: { labels: GAHP_INDICATORS.map(ind => ind.name), datasets: [{ label: '指标综合权重', data: finalW, backgroundColor: '#3b82f6', borderRadius: 6 }] }, options: { animation: {duration: 200}, responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, max: 0.15, grid: { color: '#f1f5f9' } }, y: { grid: { display: false }, ticks: { font: { size: 12, weight: 'bold' } } } } } });
+                }
             }
             
             window.gahpLastCalc = finalW;
@@ -1774,9 +1796,8 @@ print("最终权重:", np.round(final_w, 4))</code></pre>
             ahpSandboxChart = new Chart(document.getElementById('ahp-sandboxChart').getContext('2d'), { type: 'bar', data: { labels: AHP_ALTS, datasets: [{ label: '全局动态总得分', data: [0,0,0,0], backgroundColor: '#94a3b8', borderRadius: 6 }] }, options: { ...commonOpts, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, suggestedMax: 0.5, grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } } } });
             ahpRadarChart = new Chart(document.getElementById('ahp-radarChart').getContext('2d'), { type: 'radar', data: { labels: AHP_CRITERIA, datasets: [] }, options: { ...commonOpts, plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 12, padding: 15, font: { size: 14 } } } }, scales: { r: { beginAtZero: true, suggestedMax: 0.6 } } } });
             
-            // 为了避免未渲染图表报错，在初始化时创建空的图表实例
-            gahpMainChart = new Chart(document.getElementById('gahp-mainChart') || document.createElement('canvas'), { type: 'bar', data: {datasets: []} });
-            uncertAnalysisChart = new Chart(document.getElementById('uncert-analysisChart') || document.createElement('canvas'), { type: 'bar', data: {datasets: []} });
+            // 为了避免提前加载图表导致的 DOM 报错，删除了 window.onload 内部的 gahpMainChart 和 uncertAnalysisChart 初始化
+            // 这些图表将在用户第一次点击对应的沙盒/分析页面时，由函数内部进行安全的懒加载与重绘。
 
             hljs.highlightAll();
             

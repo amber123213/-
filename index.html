@@ -875,7 +875,7 @@ print("最终权重:", np.round(final_w, 4))</code></pre>
             let detailOpt = `<div class="mt-3 pt-3 border-t border-slate-100 text-[13px] text-slate-500 bg-slate-50 px-2 rounded leading-relaxed font-mono">1.提取各行最大收益：[${formatArr(res.maxs)}]<br>2.取出其中最大极值：<span class="font-bold text-slate-700">${res.maxMax.toFixed(2)}</span></div>`;
             html += createCard("乐观准则 (大中取大)", "fa-solid fa-sun", "red", res.optBest, res.maxMax, detailOpt);
             
-            let detailHur = `<div class="mt-3 pt-3 border-t border-slate-100 text-[13px] text-slate-500 bg-slate-50 px-2 rounded leading-relaxed font-mono">1.依 $\\beta$ 加权收益：[${formatArr(res.hurwicz)}]<br>2.取出其中最大极值：<span class="font-bold text-slate-700">${res.maxHurwicz.toFixed(2)}</span></div>`;
+            let detailHur = `<div class="mt-3 pt-3 border-t border-slate-100 text-[13px] text-slate-500 bg-slate-50 px-2 rounded leading-relaxed font-mono">1.依 $\beta$ 加权收益：[${formatArr(res.hurwicz)}]<br>2.取出其中最大极值：<span class="font-bold text-slate-700">${res.maxHurwicz.toFixed(2)}</span></div>`;
             html += createCard(`折中准则 (β=${uncertState.beta.toFixed(2)})`, "fa-solid fa-scale-balanced", "amber", res.hurBest, res.maxHurwicz, detailHur);
             
             let detailLap = `<div class="mt-3 pt-3 border-t border-slate-100 text-[13px] text-slate-500 bg-slate-50 px-2 rounded leading-relaxed font-mono">1.求各行平均期望值：[${formatArr(res.laplace)}]<br>2.取出其中最大极值：<span class="font-bold text-slate-700">${res.maxLaplace.toFixed(2)}</span></div>`;

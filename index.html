@@ -60,6 +60,32 @@
         }
         .diagram-stage.dragging { cursor: grabbing; }
         .diagram-container { width: 100%; height: 100%; transform-origin: 0 0; user-select: none; }
+
+        /* ================= 新增：网络优化模块 (Net) SVG 专属样式引擎 ================= */
+        .net-node { fill: #eff6ff; stroke: #3b82f6; stroke-width: 2px; transition: all 0.3s; opacity: 0; }
+        .net-path { fill: none; stroke: #94a3b8; stroke-width: 2px; stroke-linecap: round; stroke-linejoin: round; transition: all 0.3s; opacity: 0; }
+        .net-path-dashed { stroke-dasharray: 6 6; stroke: #cbd5e1; }
+        .net-text { fill: #1e293b; font-size: 13px; font-weight: bold; transition: all 0.3s; opacity: 0; font-family: -apple-system, "Noto Sans SC", sans-serif; }
+        .net-text-sm { fill: #64748b; font-size: 11px; font-weight: bold; transition: all 0.3s; opacity: 0; }
+        .net-arrow { fill: #94a3b8; opacity: 0; transition: all 0.3s; }
+        
+        /* 关键路径高亮状态 */
+        .net-arrow.critical { fill: #ef4444; }
+        .net-path.critical { stroke: #ef4444; stroke-width: 3px; }
+        .net-node.critical { stroke: #ef4444; fill: #fef2f2; stroke-width: 3px; }
+        .net-text.critical { fill: #dc2626; }
+        
+        /* 成本优化标注块 */
+        .net-annot-rect { fill: #f8fafc; stroke: #10b981; stroke-width: 1.5; rx: 4; opacity: 0; transition: all 0.3s;}
+        .net-annot-text { fill: #10b981; font-size: 12px; font-weight: bold; opacity: 0; transition: all 0.3s;}
+        .net-annot-tri { fill: #f8fafc; stroke: #ef4444; stroke-width: 1.5; opacity: 0; transition: all 0.3s;}
+        .net-annot-tri-text { fill: #ef4444; font-size: 12px; font-weight: bold; opacity: 0; transition: all 0.3s;}
+        .net-formula-tip rect { fill: #f8fafc; stroke-width: 1.5; rx: 8; }
+        .net-formula-tip.green rect { stroke: #10b981; }
+        .net-formula-tip.red rect { stroke: #ef4444; }
+        .net-formula-tip text { font-size: 12px; font-weight: bold; }
+        .net-formula-tip.green text { fill: #059669; }
+        .net-formula-tip.red text { fill: #dc2626; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col text-slate-800">
@@ -81,6 +107,9 @@
                     <option value="sd_neg">例 5-6: 一阶负反馈系统 (库存控制)</option>
                     <option value="sd_sec">例 5-7: 二阶负反馈系统 (人才培养)</option>
                     <option value="gm">例 6-8: 灰色预测模型 GM(1,1)</option>
+                    <option value="net_prog">例 7-7: 进度优化</option>
+                    <option value="net_cost">例 7-8: 成本优化</option>
+                    <option value="net_res">例 7-9: 资源优化</option>
                     <option value="ahp">例 8-9: 层次分析法 (AHP)</option>
                     <option value="gahp">例 8-10: 群组层次分析法 (Group AHP)</option>
                     <option value="uncert">例 9-1: 不确定型决策分析 (5大准则)</option>
@@ -103,7 +132,7 @@
                 <section id="uncert-tab-sandbox" class="animate-fadeIn flex flex-col gap-6">
                     <div class="flex flex-col lg:flex-row gap-6">
                         <div class="w-full lg:w-1/2 compact-card flex flex-col">
-                            <div class="card-header"><span class="text-blue-600"><i class="fa-solid fa-pen-to-square mr-2"></i> 益损矩阵调节(万元/月)</span>
+                            <div class="card-header"><span class="text-blue-600"><i class="fa-solid fa-pen-to-square mr-2"></i> 益损矩阵极速调节盘 (万元/月)</span>
                                 <button onclick="resetMatrixUncert()" class="text-xs font-normal bg-slate-100 text-slate-500 hover:text-blue-600 hover:bg-blue-50 px-3 py-1 rounded border shadow-sm transition-all"><i class="fa-solid fa-rotate-left"></i> 还原例题9-1</button>
                             </div>
                             <div class="flex-grow flex flex-col justify-center">
@@ -225,7 +254,7 @@ print("遗憾准则最优:", alts[res[4]])
                     </div>
                 </section>
             </div>
-            <div id="app-gm" class="app-container space-y-6">
+            <div id="app-gm" class="app-container space-y-6 hidden">
                 <nav class="bg-white shadow-sm flex justify-center gap-8 text-base rounded-lg border overflow-hidden">
                     <button onclick="switchTabGM('sandbox')" id="gm-nav-sandbox" class="nav-active py-3.5 px-8 flex items-center gap-2"><i class="fa-solid fa-flask"></i> 动态演示</button>
                     <button onclick="switchTabGM('steps')" id="gm-nav-steps" class="py-3.5 px-8 flex items-center gap-2 text-slate-600 hover:bg-slate-50 transition-all"><i class="fa-solid fa-list-check"></i> 步骤详解</button>
@@ -588,8 +617,7 @@ print("最终权重:", np.round(final_w, 4))</code></pre>
                     </table>
                 </section>
             </div>
-
-            <div id="app-sd" class="app-container space-y-6 hidden">
+<div id="app-sd" class="app-container space-y-6 hidden">
                 <nav class="bg-white shadow-sm flex justify-center gap-8 text-base rounded-lg border overflow-hidden">
                     <button onclick="switchTabSD('sandbox')" id="sd-nav-sandbox" class="nav-active py-3.5 px-8 flex items-center gap-2"><i class="fa-solid fa-play"></i> 动态变化与图表</button>
                     <button onclick="switchTabSD('diagram')" id="sd-nav-diagram" class="py-3.5 px-8 flex items-center gap-2 text-slate-600 hover:bg-slate-50 transition-all"><i class="fa-solid fa-project-diagram"></i> 系统流图与方程</button>
@@ -681,16 +709,438 @@ print("最终权重:", np.round(final_w, 4))</code></pre>
                 </section>
             </div>
 
-        </div>
+            <div id="app-net_prog" class="app-container space-y-6 hidden">
+                <nav class="bg-white shadow-sm flex justify-center gap-8 text-base rounded-lg border overflow-hidden">
+                    <button onclick="switchTabNetProg('theory')" id="net_prog-nav-theory" class="nav-active py-3.5 px-8 flex items-center gap-2"><i class="fa-solid fa-book-open"></i> 理论与措施</button>
+                    <button onclick="switchTabNetProg('original')" id="net_prog-nav-original" class="py-3.5 px-8 flex items-center gap-2 text-slate-600 hover:bg-slate-50 transition-all"><i class="fa-solid fa-project-diagram"></i> 例题与原图</button>
+                    <button onclick="switchTabNetProg('strategy')" id="net_prog-nav-strategy" class="py-3.5 px-8 flex items-center gap-2 text-slate-600 hover:bg-slate-50 transition-all"><i class="fa-solid fa-lightbulb"></i> 调整思路</button>
+                    <button onclick="switchTabNetProg('optimized')" id="net_prog-nav-optimized" class="py-3.5 px-8 flex items-center gap-2 text-slate-600 hover:bg-slate-50 transition-all"><i class="fa-solid fa-check-circle"></i> 优化结果</button>
+                </nav>
+
+                <section id="net_prog-tab-theory" class="animate-fadeIn compact-card py-8 px-10">
+                    <div class="card-header border-b pb-4 mb-6"><span class="text-2xl text-slate-800"><i class="fa-solid fa-book text-blue-500 mr-2"></i> 第1步：工程进度优化基础知识</span></div>
+                    <div class="bg-blue-50 border-l-4 border-blue-500 p-6 rounded-r-lg shadow-sm">
+                        <p class="text-slate-700 text-base leading-relaxed mb-4 font-bold">在资源条件允许的情况下，应尽量压缩关键工序的作业时间，缩短工程进度，以提高经济效益。通常可供选择的技术、组织措施有：</p>
+                        <ul class="list-disc list-inside text-slate-700 space-y-3 text-base ml-2">
+                            <li>(1) 检查工序流程，去掉多余环节；</li>
+                            <li>(2) 检查各工序工期，改变关键线路上的工序组织；</li>
+                            <li>(3) 把串联工序改为平行工序或交叉工序；</li>
+                            <li>(4) 调整资源或增加资源(人力、物力、财力)到关键线路上的关键工序上去；</li>
+                            <li>(5) 采取技术措施(如采用机械化、改进工艺、采用先进技术)和组织措施缩短关键工序的作业时间；</li>
+                            <li class="text-blue-700 font-bold bg-blue-100/60 inline-block px-3 py-1.5 rounded-lg border border-blue-200 mt-2">(6) 利用时差，从非关键工序上抽调部分人力、物力集中于关键工序，缩短关键工序的时间。</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <section id="net_prog-tab-original" class="hidden animate-fadeIn compact-card py-6 px-8">
+                    <div class="card-header border-b pb-4 mb-6 flex justify-between items-center">
+                        <span class="text-2xl text-slate-800"><i class="fa-solid fa-search text-blue-500 mr-2"></i> 第2步：例题 7-7 分析与原图</span>
+                    </div>
+                    <p class="text-slate-700 text-base leading-relaxed mb-6 bg-slate-50 p-4 rounded-lg border border-slate-200"><strong>【例题 7-7】</strong> 新建铁路线某个区间内的线路有关资料见下表，每天可以安排的人员数只有 10 人，要求工程 15 天完成，应如何安排工程进度才能在现有人力资源下按期完成任务？</p>
+                    
+                    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                        <div class="overflow-x-auto border rounded-xl shadow-sm bg-white">
+                            <table class="w-full text-center academic-table h-full">
+                                <thead><tr><th class="bg-blue-50/50">工序名称</th><th class="bg-blue-50/50">紧前工序</th><th class="bg-blue-50/50">工序时间(天)</th><th class="bg-blue-50/50">每天需要的人员(人)</th></tr></thead>
+                                <tbody>
+                                    <tr class="hover:bg-slate-50"><td class="font-bold text-slate-700">A</td><td>—</td><td>4</td><td>4</td></tr>
+                                    <tr class="hover:bg-slate-50"><td class="font-bold text-slate-700">B</td><td>—</td><td>5</td><td>4</td></tr>
+                                    <tr class="hover:bg-slate-50"><td class="font-bold text-slate-700">C</td><td>—</td><td>8</td><td>3</td></tr>
+                                    <tr class="hover:bg-slate-50"><td class="font-bold text-slate-700">D</td><td>B</td><td>5</td><td>4</td></tr>
+                                    <tr class="hover:bg-slate-50"><td class="font-bold text-slate-700">E</td><td>A, D, C</td><td>9</td><td>7</td></tr>
+                                    <tr class="hover:bg-slate-50"><td class="font-bold text-slate-700">F</td><td>C</td><td>1</td><td>3</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="flex flex-col bg-slate-50/70 border rounded-xl shadow-sm p-4 items-center justify-center relative min-h-[320px]">
+                            <svg id="network-graph-1" width="100%" viewBox="0 0 600 260" class="max-w-[600px] drop-shadow-sm">
+                                <circle id="node-1" cx="80" cy="120" r="16" class="net-node"/><text id="label-1" x="80" y="125" class="net-text" text-anchor="middle">1</text>
+                                <circle id="node-2" cx="240" cy="120" r="16" class="net-node"/><text id="label-2" x="240" y="125" class="net-text" text-anchor="middle">2</text>
+                                <circle id="node-3" cx="400" cy="200" r="16" class="net-node"/><text id="label-3" x="400" y="205" class="net-text" text-anchor="middle">3</text>
+                                <circle id="node-4" cx="400" cy="120" r="16" class="net-node"/><text id="label-4" x="400" y="125" class="net-text" text-anchor="middle">4</text>
+                                <circle id="node-5" cx="560" cy="120" r="16" class="net-node"/><text id="label-5" x="560" y="125" class="net-text" text-anchor="middle">5</text>
+                                <path id="path-a" class="net-path" d="M 80 104 L 80 40 L 400 40 L 400 104" marker-end="url(#arr-n)"/>
+                                <text id="label-a" x="240" y="30" class="net-text">A(4)</text>
+                                <line id="path-b" x1="96" y1="120" x2="224" y2="120" class="net-path" marker-end="url(#arr-n)"/>
+                                <text id="label-b" x="160" y="110" class="net-text">B(5)</text>
+                                <line id="path-d" x1="256" y1="120" x2="384" y2="120" class="net-path" marker-end="url(#arr-n)"/>
+                                <text id="label-d" x="320" y="110" class="net-text">D(5)</text>
+                                <path id="path-c" class="net-path" d="M 80 136 L 80 200 L 384 200" marker-end="url(#arr-n)"/>
+                                <text id="label-c" x="240" y="215" class="net-text">C(8)</text>
+                                <line id="path-v1" x1="400" y1="184" x2="400" y2="136" class="net-path net-path-dashed" marker-end="url(#arr-n)"/>
+                                <line id="path-e" x1="416" y1="120" x2="544" y2="120" class="net-path" marker-end="url(#arr-n)"/>
+                                <text id="label-e" x="480" y="110" class="net-text">E(9)</text>
+                                <line id="path-f" x1="414" y1="192" x2="546" y2="130" class="net-path" marker-end="url(#arr-n)"/>
+                                <text id="label-f" x="500" y="180" class="net-text">F(1)</text>
+                            </svg>
+                            <div class="mt-4 text-center text-sm font-bold text-slate-500 mb-2">图 7-15 【例题 7-7】的初始网络图</div>
+                            <button id="network-steps-1" class="text-center text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 px-4 py-2.5 rounded-lg shadow-md w-full max-w-[600px] transition-all cursor-pointer shadow-blue-500/30" onclick="nextStepNetProg1()">▶ 点击开始推演：载入节点</button>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6 p-5 bg-red-50 border border-red-200 rounded-xl text-red-800 shadow-sm text-base leading-relaxed">
+                        <i class="fa-solid fa-triangle-exclamation mr-2"></i> <strong>分析矛盾：</strong><br>
+                        (1) 关键线路为 1-2-4-5，即 B-D-E。关键线路的路长为 <span class="font-bold border-b border-red-400">19 天</span>，不能满足工期 15 天的要求。<br>
+                        (2) 分析每天对人员的需求。可知在前 4 天，由于 A、B、C 三项工序同时进行，需要人员 4+4+3 = <span class="font-bold border-b border-red-400">11 人</span>，超过了所能提供的人力资源限额（10人）。
+                    </div>
+                </section>
+
+                <section id="net_prog-tab-strategy" class="hidden animate-fadeIn compact-card py-8 px-10">
+                    <div class="card-header border-b pb-4 mb-6"><span class="text-2xl text-slate-800"><i class="fa-solid fa-lightbulb text-amber-500 mr-2"></i> 第3步：计划调整思路</span></div>
+                    <div class="bg-amber-50 border border-amber-200 p-6 rounded-lg shadow-sm text-amber-900 text-base leading-relaxed mb-6 relative">
+                        <span class="absolute -top-3 left-4 bg-amber-500 text-white text-xs font-bold px-3 py-1 rounded shadow">策略核心</span>
+                        遵循 <strong>“优先从非关键线路抽调资源”</strong> 的原则，对 A、F 等非关键工序进行错配调整。
+                    </div>
+                    <p class="text-slate-700 text-base leading-relaxed p-6 bg-slate-50 border rounded-lg shadow-inner">
+                        <strong>具体调整分析：</strong><br><br>
+                        <i class="fa-solid fa-arrow-right text-blue-500 mr-2"></i>① 从非关键工序 <strong>A</strong> 上抽调 2 名，1 名支持工序 <strong>B</strong>，1 名支持工序 <strong>D</strong>。这样 A 的时间将延长至 8 天，工序 B 和工序 D 都缩短为 4 天。<br><br>
+                        <i class="fa-solid fa-arrow-right text-blue-500 mr-2"></i>② 从非关键工序 <strong>F</strong> 上抽调人员 2 名，支援工序 <strong>E</strong>。这样工序 F 将延长至 3 天，而工序 E 的时间将缩短为 7 天。
+                    </p>
+                </section>
+
+                <section id="net_prog-tab-optimized" class="hidden animate-fadeIn compact-card py-8 px-10">
+                    <div class="card-header border-b pb-4 mb-6 flex justify-between items-center">
+                        <span class="text-2xl text-slate-800"><i class="fa-solid fa-check-circle text-emerald-500 mr-2"></i> 第4步：按照调整重新绘制网络图</span>
+                    </div>
+                    
+                    <div class="flex flex-col bg-slate-50/70 border rounded-xl shadow-sm p-6 items-center justify-center relative mb-6 min-h-[350px]">
+                        <svg id="network-graph-2" width="100%" viewBox="0 0 600 260" class="max-w-[600px] drop-shadow-sm">
+                            <circle id="adj-node-1" cx="80" cy="120" r="16" class="net-node"/><text id="adj-label-1" x="80" y="125" class="net-text" text-anchor="middle">1</text>
+                            <circle id="adj-node-2" cx="240" cy="120" r="16" class="net-node"/><text id="adj-label-2" x="240" y="125" class="net-text" text-anchor="middle">2</text>
+                            <circle id="adj-node-3" cx="400" cy="200" r="16" class="net-node"/><text id="adj-label-3" x="400" y="205" class="net-text" text-anchor="middle">3</text>
+                            <circle id="adj-node-4" cx="400" cy="120" r="16" class="net-node"/><text id="adj-label-4" x="400" y="125" class="net-text" text-anchor="middle">4</text>
+                            <circle id="adj-node-5" cx="560" cy="120" r="16" class="net-node"/><text id="adj-label-5" x="560" y="125" class="net-text" text-anchor="middle">5</text>
+                            <path id="adj-path-a" class="net-path" d="M 80 104 L 80 40 L 400 40 L 400 104" marker-end="url(#arr-n)"/>
+                            <text id="adj-label-a" x="240" y="30" class="net-text" fill="#10b981">A(8) 延长</text>
+                            <line id="adj-path-b" x1="96" y1="120" x2="224" y2="120" class="net-path" marker-end="url(#arr-n)"/>
+                            <text id="adj-label-b" x="160" y="110" class="net-text">B(4) 缩短</text>
+                            <line id="adj-path-d" x1="256" y1="120" x2="384" y2="120" class="net-path" marker-end="url(#arr-n)"/>
+                            <text id="adj-label-d" x="320" y="110" class="net-text">D(4) 缩短</text>
+                            <path id="adj-path-c" class="net-path" d="M 80 136 L 80 200 L 384 200" marker-end="url(#arr-n)"/>
+                            <text id="adj-label-c" x="240" y="215" class="net-text">C(8)</text>
+                            <line id="adj-path-v1" x1="400" y1="184" x2="400" y2="136" class="net-path net-path-dashed" marker-end="url(#arr-n)"/>
+                            <line id="adj-path-e" x1="416" y1="120" x2="544" y2="120" class="net-path" marker-end="url(#arr-n)"/>
+                            <text id="adj-label-e" x="480" y="110" class="net-text">E(7) 缩短</text>
+                            <line id="adj-path-f" x1="414" y1="192" x2="546" y2="130" class="net-path" marker-end="url(#arr-n)"/>
+                            <text id="adj-label-f" x="500" y="180" class="net-text" fill="#10b981">F(3) 延长</text>
+                        </svg>
+                        <div class="mt-4 text-center text-sm font-bold text-slate-500 mb-2">调整后的网络图 (目标工期 15天)</div>
+                        <button id="network-steps-2" class="text-center text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 px-4 py-2.5 rounded-lg shadow-md w-full max-w-[600px] transition-all cursor-pointer shadow-emerald-500/30" onclick="nextStepNetProg2()">▶ 点击验证优化：载入节点</button>
+                    </div>
+                    
+                    <div class="p-6 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 shadow-sm text-base leading-relaxed">
+                        <i class="fa-solid fa-flag-checkered text-xl mr-2 mb-2 block text-emerald-600"></i>
+                        ▶ 按照上述资源调配策略，重新绘制网络图并进行时间参数运算。<br>
+                        ▶ 优化后，出现了<strong>三条关键线路</strong> (A-E, B-D-E, C-F)，工期被完美压缩至 <span class="font-bold bg-white px-2 py-0.5 rounded border border-emerald-200">15 天</span>。<br>
+                        ▶ 前期同时开工人数的峰值降为 <span class="font-bold bg-white px-2 py-0.5 rounded border border-emerald-200">10 人</span>，工期和人员均满足题目双重约束要求。
+                    </div>
+                </section>
+            </div>
+
+            <div id="app-net_cost" class="app-container space-y-6 hidden">
+                <nav class="bg-white shadow-sm flex justify-center gap-8 text-base rounded-lg border overflow-hidden">
+                    <button onclick="switchTabNetCost('theory')" id="net_cost-nav-theory" class="nav-active py-3.5 px-8 flex items-center gap-2"><i class="fa-solid fa-book-open"></i> 成本优化理论</button>
+                    <button onclick="switchTabNetCost('original')" id="net_cost-nav-original" class="py-3.5 px-8 flex items-center gap-2 text-slate-600 hover:bg-slate-50 transition-all"><i class="fa-solid fa-project-diagram"></i> 初始分析与原图</button>
+                    <button onclick="switchTabNetCost('strategy')" id="net_cost-nav-strategy" class="py-3.5 px-8 flex items-center gap-2 text-slate-600 hover:bg-slate-50 transition-all"><i class="fa-solid fa-lightbulb"></i> 赶工推演</button>
+                    <button onclick="switchTabNetCost('optimized')" id="net_cost-nav-optimized" class="py-3.5 px-8 flex items-center gap-2 text-slate-600 hover:bg-slate-50 transition-all"><i class="fa-solid fa-check-circle"></i> 最终网络图</button>
+                </nav>
+
+                <section id="net_cost-tab-theory" class="animate-fadeIn compact-card py-8 px-10">
+                    <div class="card-header border-b pb-4 mb-6"><span class="text-2xl text-slate-800"><i class="fa-solid fa-coins text-blue-500 mr-2"></i> 第1步：成本优化理论基础</span></div>
+                    <div class="bg-blue-50 border-l-4 border-blue-500 p-6 rounded-r-lg shadow-sm">
+                        <h4 class="text-lg font-bold text-blue-900 mb-3">📘 概念与核心公式</h4>
+                        <p class="text-slate-700 text-base leading-relaxed mb-4">所谓网络图的成本优化，就是研究如何以最低的成本来缩短整个工期，既缩短工期，又使得总成本增加最少。</p>
+                        <ul class="list-disc list-inside text-slate-700 space-y-2 text-base ml-2">
+                            <li><strong>总成本</strong> = 直接成本 + 间接成本 + 赶工成本</li>
+                            <li><strong>成本斜率</strong> = (赶工成本 - 正常成本) / (正常时间 - 赶工时间)</li>
+                        </ul>
+                        <div class="mt-6 p-4 bg-white rounded border border-blue-200 text-slate-700 font-bold">
+                            <i class="fa-solid fa-star text-amber-400 mr-1"></i> 优化原则：<br>
+                            优先选择关键线路上<span class="text-blue-600">成本斜率最小</span>的工序进行赶工；当增加的赶工成本<span class="text-red-500">大于</span>节约的间接费用时，停止赶工。
+                        </div>
+                    </div>
+                </section>
+
+                <section id="net_cost-tab-original" class="hidden animate-fadeIn compact-card py-6 px-8">
+                    <div class="card-header border-b pb-4 mb-6 flex justify-between items-center">
+                        <span class="text-2xl text-slate-800"><i class="fa-solid fa-search text-blue-500 mr-2"></i> 第2步：例题 7-8 分析与初始网络图</span>
+                    </div>
+                    <p class="text-slate-700 text-base leading-relaxed mb-6 bg-slate-50 p-4 rounded-lg border border-slate-200"><strong>【例题 7-8】</strong> 修建某段高速公路，间接成本为 <strong>500 元/d (即 5 百元/d)</strong>，试求该工程的最低成本日程。</p>
+                    
+                    <div class="overflow-x-auto border rounded-xl shadow-sm bg-white mb-6">
+                        <table class="w-full text-center academic-table">
+                            <thead>
+                                <tr><th rowspan="2" class="bg-blue-50/50 border-r border-blue-100">工序</th><th rowspan="2" class="bg-blue-50/50 border-r border-blue-100">紧前</th><th colspan="2" class="bg-blue-50/50 border-r border-blue-100 border-b border-blue-100">正常</th><th colspan="2" class="bg-amber-50/50 border-r border-amber-100 border-b border-amber-100">赶工</th><th rowspan="2" class="bg-emerald-50/50">成本斜率</th></tr>
+                                <tr><th class="bg-blue-50/50 text-xs text-slate-500">时间(d)</th><th class="bg-blue-50/50 text-xs text-slate-500 border-r border-blue-100">成本(百元)</th><th class="bg-amber-50/50 text-xs text-slate-500">时间(d)</th><th class="bg-amber-50/50 text-xs text-slate-500 border-r border-amber-100">成本(百元)</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr class="hover:bg-slate-50"><td class="font-bold border-r">A</td><td class="border-r">—</td><td>15</td><td class="border-r">24</td><td>12</td><td class="border-r">30</td><td class="font-bold text-emerald-600 bg-emerald-50/30">2</td></tr>
+                                <tr class="hover:bg-slate-50"><td class="font-bold border-r">B</td><td class="border-r">A</td><td>12</td><td class="border-r">20</td><td>10</td><td class="border-r">26</td><td class="font-bold text-emerald-600 bg-emerald-50/30">3</td></tr>
+                                <tr class="hover:bg-slate-50"><td class="font-bold border-r">C</td><td class="border-r">A</td><td>9</td><td class="border-r">22</td><td>7</td><td class="border-r">28</td><td class="font-bold text-emerald-600 bg-emerald-50/30">3</td></tr>
+                                <tr class="hover:bg-slate-50"><td class="font-bold border-r">D</td><td class="border-r">B</td><td>10</td><td class="border-r">18</td><td>9</td><td class="border-r">24</td><td class="font-bold text-emerald-600 bg-emerald-50/30">6</td></tr>
+                                <tr class="hover:bg-slate-50"><td class="font-bold border-r">E</td><td class="border-r">B,C</td><td>8</td><td class="border-r">14</td><td>7</td><td class="border-r">18</td><td class="font-bold text-emerald-600 bg-emerald-50/30">4</td></tr>
+                                <tr class="hover:bg-slate-50"><td class="font-bold border-r">F</td><td class="border-r">D,E</td><td>12</td><td class="border-r">16</td><td>10</td><td class="border-r">26</td><td class="font-bold text-emerald-600 bg-emerald-50/30">5</td></tr>
+                                <tr class="hover:bg-slate-50"><td class="font-bold border-r">G</td><td class="border-r">E</td><td>15</td><td class="border-r">24</td><td>12</td><td class="border-r">30</td><td class="font-bold text-emerald-600 bg-emerald-50/30">2</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="flex flex-col bg-slate-50/70 border rounded-xl shadow-sm p-4 items-center justify-center relative min-h-[400px]">
+                        <svg id="cost-network-graph" width="100%" viewBox="0 0 760 370" class="max-w-[760px] drop-shadow-sm">
+                            <g id="cost-forward-tip" class="net-formula-tip green"><rect x="570" y="52" width="160" height="42"></rect><text x="650" y="78" text-anchor="middle">顺箭头相加，相碰取大值</text></g>
+                            <g id="cost-backward-tip" class="net-formula-tip red"><rect x="570" y="300" width="160" height="42"></rect><text x="650" y="326" text-anchor="middle">逆箭头相减，相碰取小值</text></g>
+                            <circle id="cost-node-1" cx="70" cy="170" r="22" class="net-node"/><text id="cost-label-1" x="70" y="176" class="net-text" text-anchor="middle">1</text>
+                            <circle id="cost-node-2" cx="190" cy="170" r="22" class="net-node"/><text id="cost-label-2" x="190" y="176" class="net-text" text-anchor="middle">2</text>
+                            <circle id="cost-node-3" cx="330" cy="90" r="22" class="net-node"/><text id="cost-label-3" x="330" y="96" class="net-text" text-anchor="middle">3</text>
+                            <circle id="cost-node-4" cx="330" cy="250" r="22" class="net-node"/><text id="cost-label-4" x="330" y="256" class="net-text" text-anchor="middle">4</text>
+                            <circle id="cost-node-5" cx="500" cy="250" r="22" class="net-node"/><text id="cost-label-5" x="500" y="256" class="net-text" text-anchor="middle">5</text>
+                            <circle id="cost-node-6" cx="500" cy="90" r="22" class="net-node"/><text id="cost-label-6" x="500" y="96" class="net-text" text-anchor="middle">6</text>
+                            <circle id="cost-node-7" cx="650" cy="170" r="22" class="net-node"/><text id="cost-label-7" x="650" y="176" class="net-text" text-anchor="middle">7</text>
+                            <line id="cost-path-a" x1="92" y1="170" x2="168" y2="170" class="net-path" marker-end="url(#arr-n)"/>
+                            <text id="cost-label-a" x="130" y="150" class="net-text" text-anchor="middle">A</text><text id="cost-duration-a" x="130" y="192" class="net-text-sm" fill="#10b981" text-anchor="middle">15</text>
+                            <path id="cost-path-b" class="net-path" d="M 190 148 L 190 90 L 308 90" marker-end="url(#arr-n)"/>
+                            <text id="cost-label-b" x="250" y="68" class="net-text" text-anchor="middle">B</text><text id="cost-duration-b" x="250" y="110" class="net-text-sm" fill="#10b981" text-anchor="middle">12</text>
+                            <path id="cost-path-c" class="net-path" d="M 190 192 L 190 250 L 308 250" marker-end="url(#arr-n)"/>
+                            <text id="cost-label-c" x="250" y="228" class="net-text" text-anchor="middle">C</text><text id="cost-duration-c" x="250" y="270" class="net-text-sm" fill="#10b981" text-anchor="middle">9</text>
+                            <line id="cost-path-d" x1="352" y1="90" x2="478" y2="90" class="net-path" marker-end="url(#arr-n)"/>
+                            <text id="cost-label-d" x="415" y="68" class="net-text" text-anchor="middle">D</text><text id="cost-duration-d" x="415" y="110" class="net-text-sm" fill="#10b981" text-anchor="middle">10</text>
+                            <line id="cost-path-e" x1="352" y1="250" x2="478" y2="250" class="net-path" marker-end="url(#arr-n)"/>
+                            <text id="cost-label-e" x="415" y="228" class="net-text" text-anchor="middle">E</text><text id="cost-duration-e" x="415" y="270" class="net-text-sm" fill="#10b981" text-anchor="middle">8</text>
+                            <path id="cost-path-f" class="net-path" d="M 522 90 L 650 90 L 650 148" marker-end="url(#arr-n)"/>
+                            <text id="cost-label-f" x="585" y="68" class="net-text" text-anchor="middle">F</text><text id="cost-duration-f" x="585" y="110" class="net-text-sm" fill="#10b981" text-anchor="middle">12</text>
+                            <path id="cost-path-g" class="net-path" d="M 522 250 L 650 250 L 650 192" marker-end="url(#arr-n)"/>
+                            <text id="cost-label-g" x="585" y="228" class="net-text" text-anchor="middle">G</text><text id="cost-duration-g" x="585" y="270" class="net-text-sm" fill="#10b981" text-anchor="middle">15</text>
+                            <line id="cost-path-v1" x1="330" y1="112" x2="330" y2="228" class="net-path net-path-dashed" marker-end="url(#arr-n)"/>
+                            <line id="cost-path-v2" x1="500" y1="228" x2="500" y2="112" class="net-path net-path-dashed" marker-end="url(#arr-n)"/>
+                            
+                            <g id="ef-1" class="annotation-box"><rect class="net-annot-rect" x="42" y="104" width="56" height="34"></rect><text class="net-annot-text" x="70" y="126" text-anchor="middle">0</text></g>
+                            <g id="ef-2" class="annotation-box"><rect class="net-annot-rect" x="162" y="104" width="56" height="34"></rect><text class="net-annot-text" x="190" y="126" text-anchor="middle">15</text></g>
+                            <g id="ef-3" class="annotation-box"><rect class="net-annot-rect" x="302" y="26" width="56" height="34"></rect><text class="net-annot-text" x="330" y="48" text-anchor="middle">27</text></g>
+                            <g id="ef-4" class="annotation-box"><rect class="net-annot-rect" x="302" y="184" width="56" height="34"></rect><text class="net-annot-text" x="330" y="206" text-anchor="middle">27</text></g>
+                            <g id="ef-5" class="annotation-box"><rect class="net-annot-rect" x="472" y="184" width="56" height="34"></rect><text class="net-annot-text" x="500" y="206" text-anchor="middle">35</text></g>
+                            <g id="ef-6" class="annotation-box"><rect class="net-annot-rect" x="472" y="26" width="56" height="34"></rect><text class="net-annot-text" x="500" y="48" text-anchor="middle">37</text></g>
+                            <g id="ef-7" class="annotation-box"><rect class="net-annot-rect" x="622" y="104" width="56" height="34"></rect><text class="net-annot-text" x="650" y="126" text-anchor="middle">50</text></g>
+                            
+                            <g id="lf-7" class="annotation-box"><polygon class="net-annot-tri" points="610,250 690,250 650,206"></polygon><text class="net-annot-tri-text" x="650" y="235" text-anchor="middle">50</text></g>
+                            <g id="lf-6" class="annotation-box"><polygon class="net-annot-tri" points="460,170 540,170 500,126"></polygon><text class="net-annot-tri-text" x="500" y="155" text-anchor="middle">38</text></g>
+                            <g id="lf-5" class="annotation-box"><polygon class="net-annot-tri" points="460,320 540,320 500,276"></polygon><text class="net-annot-tri-text" x="500" y="305" text-anchor="middle">35</text></g>
+                            <g id="lf-4" class="annotation-box"><polygon class="net-annot-tri" points="290,320 370,320 330,276"></polygon><text class="net-annot-tri-text" x="330" y="305" text-anchor="middle">27</text></g>
+                            <g id="lf-3" class="annotation-box"><polygon class="net-annot-tri" points="290,170 370,170 330,126"></polygon><text class="net-annot-tri-text" x="330" y="155" text-anchor="middle">27</text></g>
+                            <g id="lf-2" class="annotation-box"><polygon class="net-annot-tri" points="150,250 230,250 190,206"></polygon><text class="net-annot-tri-text" x="190" y="235" text-anchor="middle">15</text></g>
+                            <g id="lf-1" class="annotation-box"><polygon class="net-annot-tri" points="30,250 110,250 70,206"></polygon><text class="net-annot-tri-text" x="70" y="235" text-anchor="middle">0</text></g>
+                        </svg>
+                        <div class="mt-4 text-center text-sm font-bold text-slate-500 mb-2">图 7-16：初始网络图（包含最早时间、最迟时间计算）</div>
+                        <button id="network-steps-cost" class="text-center text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 px-4 py-2.5 rounded-lg shadow-md w-full max-w-[600px] transition-all cursor-pointer shadow-blue-500/30" onclick="nextStepNetCost1()">▶ 点击开始推演：载入节点</button>
+                    </div>
+                    <div class="p-5 bg-red-50 border border-red-200 rounded-xl text-red-800 shadow-sm text-base leading-relaxed">
+                        <i class="fa-solid fa-calculator mr-2"></i> <strong>初始状态评估：</strong><br>
+                        初始总成本 = 直接(24+20+22+18+14+16+24) + 间接(50×5=250) + 赶工(0) = <span class="font-bold border-b border-red-400 text-lg">388 百元</span>。
+                    </div>
+                </section>
+
+                <section id="net_cost-tab-strategy" class="hidden animate-fadeIn compact-card py-8 px-10">
+                    <div class="card-header border-b pb-4 mb-6"><span class="text-2xl text-slate-800"><i class="fa-solid fa-lightbulb text-amber-500 mr-2"></i> 第3步：成本优化推演</span></div>
+                    
+                    <div class="space-y-6">
+                        <div class="bg-amber-50 border border-amber-200 p-6 rounded-lg shadow-sm relative">
+                            <span class="absolute -top-3 left-4 bg-amber-500 text-white text-xs font-bold px-3 py-1 rounded shadow">第一轮压缩</span>
+                            <p class="text-slate-800 text-base leading-relaxed">
+                                关键线路 A-B-E-G 中，成本斜率最小的是 A(2) 和 G(2)。<br>
+                                A 可赶工 3d，G 只能赶工 1d，此时增加一条关键线路，故决定 <strong>A 赶工 3d，G 赶工 1d</strong>。
+                            </p>
+                            <div class="mt-3 text-sm text-slate-600 bg-white p-3 rounded border border-amber-100">
+                                <strong>结果：</strong>工期降为 46d。增加成本 (3×2 + 1×2)=8，节约间接费 (4×5)=20。新总成本 = 388 - 20 + 8 = <strong class="text-emerald-600 text-lg">376 百元</strong>。<br>
+                                此时出现两条关键线路：A-B-E-G(46d) 和 A-B-D-F(46d)。
+                            </div>
+                        </div>
+
+                        <div class="bg-blue-50 border border-blue-200 p-6 rounded-lg shadow-sm relative">
+                            <span class="absolute -top-3 left-4 bg-blue-500 text-white text-xs font-bold px-3 py-1 rounded shadow">第二轮压缩</span>
+                            <p class="text-slate-800 text-base leading-relaxed">
+                                再要降低成本，必须同时压缩两条关键线路，并且只有工序C为非关键工序。<br>
+                                公共关键工序 B 成本斜率为 3。因 3 < 5(间接费)，值得压缩。决定 <strong>B 赶工 2d</strong>。
+                            </p>
+                            <div class="mt-3 text-sm text-slate-600 bg-white p-3 rounded border border-blue-100">
+                                <strong>结果：</strong>工期降为 44d。增加成本 (2×3)=6，节约间接费 (2×5)=10。新总成本 = 376 - 10 + 6 = <strong class="text-emerald-600 text-lg">372 百元</strong>。<br>
+                                工序 D 的成本斜率(6)大于每天的间接成本(5)，赶工使总成本增加，不可行。
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-50 border border-slate-200 p-6 rounded-lg shadow-sm relative">
+                            <span class="absolute -top-3 left-4 bg-slate-500 text-white text-xs font-bold px-3 py-1 rounded shadow">极限分析</span>
+                            <p class="text-slate-800 text-base leading-relaxed mb-3">此时是否还存在赶工方案呢？赶工必须同时考虑两条关键线路，可分析如下三种组合：</p>
+                            <table class="w-full text-center academic-table bg-white border rounded">
+                                <thead><tr><th class="bg-slate-100 w-1/5">方案</th><th class="bg-slate-100">赶工组合</th><th class="bg-slate-100 w-1/3">新增成本（百元/d）</th></tr></thead>
+                                <tbody>
+                                    <tr><td class="font-bold">1</td><td>F 赶工 1d，E 赶工 1d</td><td>5 + 4 = <span class="text-red-500 font-bold">9</span></td></tr>
+                                    <tr><td class="font-bold">2</td><td>F 赶工 1d，G 赶工 1d</td><td>5 + 2 = <span class="text-red-500 font-bold">7</span></td></tr>
+                                    <tr><td class="font-bold">3</td><td>F 赶工 2d，G 1d，E 1d</td><td>(5×2 + 4 + 2) / 2 = <span class="text-red-500 font-bold">8</span></td></tr>
+                                </tbody>
+                            </table>
+                            <p class="mt-3 text-sm text-slate-600">由分析可知，<strong>平均每天的赶工成本均大于间接费(5)</strong>，故以上组合均不具备经济性。</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="net_cost-tab-optimized" class="hidden animate-fadeIn compact-card py-8 px-10">
+                    <div class="card-header border-b pb-4 mb-6 flex justify-between items-center">
+                        <span class="text-2xl text-slate-800"><i class="fa-solid fa-check-circle text-emerald-500 mr-2"></i> 第4步：最终结论与调整后网络图</span>
+                    </div>
+                    
+                    <div class="flex flex-col bg-slate-50/70 border rounded-xl shadow-sm p-6 items-center justify-center relative mb-6">
+                        <svg id="final-cost-network" width="100%" viewBox="0 0 600 240" class="max-w-[600px] drop-shadow-sm">
+                            <circle id="final-cost-node-1" cx="60" cy="120" r="16" class="net-node"/><text id="final-cost-label-1" x="60" y="125" class="net-text" text-anchor="middle">1</text>
+                            <circle id="final-cost-node-2" cx="160" cy="120" r="16" class="net-node"/><text id="final-cost-label-2" x="160" y="125" class="net-text" text-anchor="middle">2</text>
+                            <circle id="final-cost-node-3" cx="280" cy="60" r="16" class="net-node"/><text id="final-cost-label-3" x="280" y="65" class="net-text" text-anchor="middle">3</text>
+                            <circle id="final-cost-node-4" cx="280" cy="180" r="16" class="net-node"/><text id="final-cost-label-4" x="280" y="185" class="net-text" text-anchor="middle">4</text>
+                            <circle id="final-cost-node-5" cx="420" cy="180" r="16" class="net-node"/><text id="final-cost-label-5" x="420" y="185" class="net-text" text-anchor="middle">5</text>
+                            <circle id="final-cost-node-6" cx="420" cy="60" r="16" class="net-node"/><text id="final-cost-label-6" x="420" y="65" class="net-text" text-anchor="middle">6</text>
+                            <circle id="final-cost-node-7" cx="540" cy="120" r="16" class="net-node"/><text id="final-cost-label-7" x="540" y="125" class="net-text" text-anchor="middle">7</text>
+                            <line id="final-cost-path-a" x1="76" y1="120" x2="144" y2="120" class="net-path" marker-end="url(#arr-n)"/>
+                            <text id="final-cost-label-a" x="105" y="105" class="net-text" text-anchor="middle">A(12)<tspan x="105" dy="16" fill="#10b981" font-size="11">缩短3d</tspan></text>
+                            <path id="final-cost-path-b" class="net-path" d="M 160 104 L 160 60 L 264 60" marker-end="url(#arr-n)"/>
+                            <text id="final-cost-label-b" x="210" y="50" class="net-text" text-anchor="middle">B(10) <tspan fill="#10b981" font-size="11">缩短2d</tspan></text>
+                            <path id="final-cost-path-c" class="net-path" d="M 160 136 L 160 180 L 264 180" marker-end="url(#arr-n)"/>
+                            <text id="final-cost-label-c" x="210" y="170" class="net-text" text-anchor="middle">C(9)</text>
+                            <line id="final-cost-path-d" x1="296" y1="60" x2="404" y2="60" class="net-path" marker-end="url(#arr-n)"/>
+                            <text id="final-cost-label-d" x="350" y="50" class="net-text" text-anchor="middle">D(10)</text>
+                            <line id="final-cost-path-e" x1="296" y1="180" x2="404" y2="180" class="net-path" marker-end="url(#arr-n)"/>
+                            <text id="final-cost-label-e" x="350" y="170" class="net-text" text-anchor="middle">E(8)</text>
+                            <path id="final-cost-path-f" class="net-path" d="M 436 60 L 540 60 L 540 104" marker-end="url(#arr-n)"/>
+                            <text id="final-cost-label-f" x="490" y="50" class="net-text" text-anchor="middle">F(12)</text>
+                            <path id="final-cost-path-g" class="net-path" d="M 436 180 L 540 180 L 540 136" marker-end="url(#arr-n)"/>
+                            <text id="final-cost-label-g" x="490" y="170" class="net-text" text-anchor="middle">G(14) <tspan fill="#10b981" font-size="11">缩短1d</tspan></text>
+                            <line id="final-cost-path-v1" x1="280" y1="76" x2="280" y2="164" class="net-path net-path-dashed" marker-end="url(#arr-n)"/>
+                            <line id="final-cost-path-v2" x1="420" y1="164" x2="420" y2="76" class="net-path net-path-dashed" marker-end="url(#arr-n)"/>
+                        </svg>
+                        <div class="mt-4 text-center text-sm font-bold text-slate-500 mb-2">图 7-17：调整后的最终网络图</div>
+                        <button id="network-steps-3" class="text-center text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 px-4 py-2.5 rounded-lg shadow-md w-full max-w-[600px] transition-all cursor-pointer shadow-emerald-500/30" onclick="nextStepNetCost2()">▶ 点击生成最终网络：载入节点</button>
+                    </div>
+                    
+                    <div class="p-6 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 shadow-sm text-base leading-relaxed">
+                        <i class="fa-solid fa-flag-checkered text-xl mr-2 mb-2 block text-emerald-600"></i>
+                        ▶ 最终关键线路确立为平行的两条：A-B-E-G 与 A-B-D-F。<br>
+                        ▶ 该工程的最低成本日程为 <span class="font-bold bg-white px-2 py-0.5 rounded border border-emerald-200">44 天</span>。<br>
+                        ▶ 工程最低总成本为 <span class="font-bold bg-white px-2 py-0.5 rounded border border-emerald-200 text-lg">372 百元</span>，成本优化目标圆满达成！
+                    </div>
+                </section>
+            </div>
+
+            <div id="app-net_res" class="app-container space-y-6 hidden">
+                <nav class="bg-white shadow-sm flex justify-center gap-8 text-base rounded-lg border overflow-hidden">
+                    <button onclick="switchTabNetRes('theory')" id="net_res-nav-theory" class="nav-active py-3.5 px-8 flex items-center gap-2"><i class="fa-solid fa-book-open"></i> 资源优化理论</button>
+                    <button onclick="switchTabNetRes('original')" id="net_res-nav-original" class="py-3.5 px-8 flex items-center gap-2 text-slate-600 hover:bg-slate-50 transition-all"><i class="fa-solid fa-chart-column"></i> 初始资源分布</button>
+                    <button onclick="switchTabNetRes('strategy')" id="net_res-nav-strategy" class="py-3.5 px-8 flex items-center gap-2 text-slate-600 hover:bg-slate-50 transition-all"><i class="fa-solid fa-lightbulb"></i> 削峰填谷策略</button>
+                    <button onclick="switchTabNetRes('optimized')" id="net_res-nav-optimized" class="py-3.5 px-8 flex items-center gap-2 text-slate-600 hover:bg-slate-50 transition-all"><i class="fa-solid fa-check-circle"></i> 资源均衡结果</button>
+                </nav>
+
+                <section id="net_res-tab-theory" class="animate-fadeIn compact-card py-8 px-10">
+                    <div class="card-header border-b pb-4 mb-6"><span class="text-2xl text-slate-800"><i class="fa-solid fa-layer-group text-blue-500 mr-2"></i> 第1步：资源优化基础理论</span></div>
+                    <div class="bg-blue-50 border-l-4 border-blue-500 p-6 rounded-r-lg shadow-sm">
+                        <p class="text-slate-700 text-base leading-relaxed mb-4">网络计划的资源优化，主要解决两个核心问题：<strong>“工期规定，资源均衡”</strong> 或 <strong>“资源有限，工期最短”</strong>。</p>
+                        <ul class="list-disc list-inside text-slate-700 space-y-3 text-base ml-2">
+                            <li><span class="font-bold text-blue-800">基本原理：</span>利用非关键工序具有的<strong>时差（机动时间）</strong>，错开各项工序的开工时间。</li>
+                            <li><span class="font-bold text-blue-800">削峰填谷：</span>将非关键工序推迟到资源需求量较低的“低谷”期进行，从而降低整个工程的资源需求“高峰”。</li>
+                            <li><span class="font-bold text-blue-800">衡量指标：</span>采用资源方差 $S^2 = \frac{1}{T} \sum_{t=1}^{T} (R_t - R_m)^2$ 来衡量均衡程度。方差越小，每天资源需求越平稳，能够极大节约闲置和调配成本。</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <section id="net_res-tab-original" class="hidden animate-fadeIn compact-card py-6 px-8">
+                    <div class="card-header border-b pb-4 mb-6 flex justify-between items-center">
+                        <span class="text-2xl text-slate-800"><i class="fa-solid fa-search text-blue-500 mr-2"></i> 第2步：例题 7-9 分析与初始网络图</span>
+                    </div>
+                    <p class="text-slate-700 text-base leading-relaxed mb-6 bg-slate-50 p-4 rounded-lg border border-slate-200"><strong>【例题 7-9】</strong> 已知某工程网络图及各项工序所需的劳动力，要求在<strong>工期不延长的条件下，使劳动力消耗最为均衡</strong>（即资源方差最小）。各工序按“最早开工时间”安排。</p>
+                    
+                    <div class="flex flex-col bg-slate-50/70 border rounded-xl shadow-sm p-4 items-center justify-center relative min-h-[350px]">
+                        <svg id="res-graph-original" width="100%" viewBox="0 0 600 240" class="max-w-[600px] drop-shadow-sm">
+                            <circle cx="100" cy="120" r="16" class="net-node"/><text x="100" y="125" class="net-text" text-anchor="middle">1</text>
+                            <circle cx="300" cy="60" r="16" class="net-node"/><text x="300" y="65" class="net-text" text-anchor="middle">2</text>
+                            <circle cx="300" cy="180" r="16" class="net-node"/><text x="300" y="185" class="net-text" text-anchor="middle">3</text>
+                            <circle cx="500" cy="120" r="16" class="net-node"/><text x="500" y="125" class="net-text" text-anchor="middle">4</text>
+                            
+                            <path class="net-path critical" d="M 116 110 L 284 66" marker-end="url(#arr-n)"/>
+                            <text x="200" y="80" class="net-text critical">A(4d, 6人)</text>
+                            
+                            <path class="net-path" d="M 116 130 L 284 174" marker-end="url(#arr-n)"/>
+                            <text x="200" y="170" class="net-text">B(3d, 4人) [时差:2d]</text>
+                            
+                            <path class="net-path critical" d="M 316 66 L 484 110" marker-end="url(#arr-n)"/>
+                            <text x="400" y="80" class="net-text critical">C(5d, 3人)</text>
+                            
+                            <path class="net-path" d="M 316 174 L 484 130" marker-end="url(#arr-n)"/>
+                            <text x="400" y="170" class="net-text">D(4d, 5人) [时差:2d]</text>
+                        </svg>
+                        <div class="mt-4 text-center text-sm font-bold text-slate-500 mb-2">初始按“最早开工”安排的网络图</div>
+                        <button id="network-steps-res-1" class="text-center text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 px-4 py-2.5 rounded-lg shadow-md w-full max-w-[600px] transition-all cursor-pointer shadow-blue-500/30" onclick="nextStepNetRes1()">▶ 点击载入初始分布网络</button>
+                    </div>
+                </section>
+
+                <section id="net_res-tab-strategy" class="hidden animate-fadeIn compact-card py-8 px-10">
+                    <div class="card-header border-b pb-4 mb-6"><span class="text-2xl text-slate-800"><i class="fa-solid fa-lightbulb text-amber-500 mr-2"></i> 第3步：削峰填谷策略推演</span></div>
+                    
+                    <div class="space-y-6">
+                        <div class="bg-amber-50 border border-amber-200 p-6 rounded-lg shadow-sm relative">
+                            <span class="absolute -top-3 left-4 bg-amber-500 text-white text-xs font-bold px-3 py-1 rounded shadow">错峰推演</span>
+                            <p class="text-slate-800 text-base leading-relaxed">
+                                观察发现，工序 B 具有 <strong>2天</strong> 的总时差，工序 D 也有 <strong>2天</strong> 的总时差。<br>
+                                如果让 B、D 都在“最早可能开工时间”启动，会导致初期（第1-3天）和中期（第5-7天）的资源需求极大突增（峰值达到10人）。
+                            </p>
+                            <div class="mt-4 text-sm text-slate-600 bg-white p-4 rounded border border-amber-100 shadow-inner">
+                                <strong>调整方案：</strong>充分利用时差，将非关键工序 <strong>B 延后 1 天开工</strong>，将非关键工序 <strong>D 延后 2 天开工</strong>。这样它们将避开与关键工序 A 和 C 的集中叠加，从而拉平每一天的资源需求曲线。
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="net_res-tab-optimized" class="hidden animate-fadeIn compact-card py-8 px-10">
+                    <div class="card-header border-b pb-4 mb-6 flex justify-between items-center">
+                        <span class="text-2xl text-slate-800"><i class="fa-solid fa-check-circle text-emerald-500 mr-2"></i> 第4步：最终资源均衡图表</span>
+                    </div>
+                    
+                    <div class="flex flex-col xl:flex-row gap-6 mb-6">
+                        <div class="w-full xl:w-1/2 compact-card flex flex-col items-center justify-center relative min-h-[300px] bg-slate-50 border-emerald-200">
+                            <h3 class="font-bold text-slate-700 mb-4 border-b pb-2 w-full text-center">优化后的网络时序分配</h3>
+                            <svg id="res-graph-opt" width="100%" viewBox="0 0 500 200" class="max-w-[500px] drop-shadow-sm">
+                                <circle cx="80" cy="100" r="16" class="net-node critical"/><text x="80" y="105" class="net-text" text-anchor="middle">1</text>
+                                <circle cx="240" cy="50" r="16" class="net-node critical"/><text x="240" y="55" class="net-text" text-anchor="middle">2</text>
+                                <circle cx="240" cy="150" r="16" class="net-node"/><text x="240" y="155" class="net-text" text-anchor="middle">3</text>
+                                <circle cx="400" cy="100" r="16" class="net-node critical"/><text x="400" y="105" class="net-text" text-anchor="middle">4</text>
+                                
+                                <path class="net-path critical" d="M 96 92 L 224 58" marker-end="url(#arr-n)"/>
+                                <text x="160" y="65" class="net-text critical">A(4d, 6人)</text>
+                                
+                                <path class="net-path" d="M 96 108 L 224 142" marker-end="url(#arr-n)"/>
+                                <text x="160" y="145" class="net-text" fill="#10b981">B(推迟1天)</text>
+                                
+                                <path class="net-path critical" d="M 256 58 L 384 92" marker-end="url(#arr-n)"/>
+                                <text x="320" y="65" class="net-text critical">C(5d, 3人)</text>
+                                
+                                <path class="net-path" d="M 256 142 L 384 108" marker-end="url(#arr-n)"/>
+                                <text x="320" y="145" class="net-text" fill="#10b981">D(推迟2天)</text>
+                            </svg>
+                            <button id="network-steps-res-2" class="text-center text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 px-4 py-2.5 rounded-lg shadow-md w-full max-w-[500px] transition-all cursor-pointer shadow-emerald-500/30 mt-4" onclick="nextStepNetRes2()">▶ 点击载入均衡后网络</button>
+                        </div>
+                        <div class="w-full xl:w-1/2 compact-card flex flex-col justify-center">
+                            <div class="p-6 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 shadow-sm text-base leading-relaxed">
+                                <i class="fa-solid fa-chart-column text-xl mr-2 mb-2 block text-emerald-600"></i>
+                                ▶ 经过削峰填谷，工期依然保持 <span class="font-bold bg-white px-2 py-0.5 rounded border border-emerald-200">9 天</span> 不变。<br><br>
+                                ▶ 资源方差大幅度下降，每天的资源需求稳定在 <span class="font-bold bg-white px-2 py-0.5 rounded border border-emerald-200 text-lg">6~8 人</span> 之间。<br><br>
+                                ▶ 彻底消除了原计划中“部分时段需求10人，部分时段只需3人”的极端波动，完美实现了资源的平滑调配。
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+            </div>
     </main>
 
     <footer class="bg-white border-t py-6 mt-8 shadow-inner">
         <div class="max-w-[1500px] mx-auto px-6 text-center text-slate-500 font-bold text-sm tracking-wide">
-            大连交通大学交通工程学院 《交通运输系统工程》课程组 &copy; 2026 · 交通运输系统工程（第三版）辅助教学系统
+            大连交通大学交通工程学院 《交通运输系统工程》课程组 &copy; 2026 · 交通运输系统工程辅助教学系统
         </div>
     </footer>
-
-    <script>
+<script>
         // ================= 全局安全的 MathJax 渲染器 =================
         const MathRenderer = {
             queue: Promise.resolve(),
@@ -724,7 +1174,7 @@ print("最终权重:", np.round(final_w, 4))</code></pre>
         // ================= 顶层路由控制 =================
         let currentApp = 'uncert';
         function handleAppSelect(val) {
-            if (['gm', 'ahp', 'gahp', 'uncert'].includes(val)) {
+            if (['gm', 'ahp', 'gahp', 'uncert', 'net_prog', 'net_cost', 'net_res'].includes(val)) {
                 switchApp(val);
             } else if (val.startsWith('sd_')) {
                 let idx = val === 'sd_pos' ? 0 : (val === 'sd_neg' ? 1 : 2);
@@ -745,48 +1195,226 @@ print("最终权重:", np.round(final_w, 4))</code></pre>
             document.getElementById('app-' + appId).classList.remove('hidden');
             
             let select = document.getElementById('main-app-selector');
-            if(appId === 'gm' || appId === 'ahp' || appId === 'gahp' || appId === 'uncert') select.value = appId;
-            else if(appId === 'sd') select.value = sdState.modelIndex === 0 ? 'sd_pos' : (sdState.modelIndex === 1 ? 'sd_neg' : 'sd_sec');
+            if(['gm', 'ahp', 'gahp', 'uncert', 'net_prog', 'net_cost', 'net_res'].includes(appId)) {
+                select.value = appId;
+            } else if(appId === 'sd') {
+                select.value = sdState.modelIndex === 0 ? 'sd_pos' : (sdState.modelIndex === 1 ? 'sd_neg' : 'sd_sec');
+            }
 
             if(appId === 'gm') { updateSandboxGM(); if(!document.getElementById('gm-tab-analysis').classList.contains('hidden')) renderAnalysisGM(); }
             if(appId === 'ahp') { updateSandboxAHP(); if(!document.getElementById('ahp-tab-analysis').classList.contains('hidden')) renderAnalysisAHP(); }
             if(appId === 'gahp') { updateGAHPExpert1(); } 
             if(appId === 'sd') { updateSDAll(); }
             if(appId === 'uncert') { updateSandboxUncert(); if(!document.getElementById('uncert-tab-analysis').classList.contains('hidden')) renderAnalysisUncert(); }
+            
+            // 首次切换到 Net 模块时，自动触发首个 Tab 的状态初始化
+            if(appId === 'net_prog') { switchTabNetProg('theory'); }
+            if(appId === 'net_cost') { switchTabNetCost('theory'); }
+            if(appId === 'net_res') { switchTabNetRes('theory'); }
         }
 
         // =========================================================
-        // 新增核心：不确定型决策 (Uncert) JS 引擎
+        // 核心：网络图 SVG 动画引擎 (分步点击推演重构版)
+        // =========================================================
+        function triggerSVGAnimation(selector, delayBase = 0, stagger = 50) {
+            const elements = document.querySelectorAll(selector);
+            elements.forEach((el, index) => {
+                setTimeout(() => { el.style.opacity = 1; }, delayBase + index * stagger);
+            });
+        }
+
+        // --- 分步控制状态变量 ---
+        let stepProg1 = 0, stepProg2 = 0, stepCost1 = 0, stepCost2 = 0, stepRes1 = 0, stepRes2 = 0;
+
+        // =============== 进度优化 (例 7-7) ===============
+        function switchTabNetProg(tabId) {
+            document.querySelectorAll('#app-net_prog section').forEach(s => s.classList.add('hidden'));
+            document.getElementById(`net_prog-tab-${tabId}`).classList.remove('hidden');
+            document.querySelectorAll('#app-net_prog .nav-active').forEach(l => { l.classList.remove('nav-active', 'bg-eff6ff'); l.classList.add('text-slate-600', 'bg-transparent'); });
+            let act = document.getElementById(`net_prog-nav-${tabId}`);
+            act.classList.remove('text-slate-600', 'bg-transparent'); act.classList.add('nav-active', 'bg-eff6ff');
+            
+            if (tabId === 'original') {
+                stepProg1 = 0;
+                document.querySelectorAll('#network-graph-1 .net-node, #network-graph-1 .net-path, #network-graph-1 .net-text').forEach(el => el.style.opacity = 0);
+                document.querySelectorAll('#network-graph-1 .critical').forEach(el => el.classList.remove('critical'));
+                let btn = document.getElementById('network-steps-1');
+                btn.innerHTML = '▶ 点击开始推演：载入节点';
+                btn.className = "text-center text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 px-4 py-2.5 rounded-lg shadow-md w-full max-w-[600px] transition-all cursor-pointer shadow-blue-500/30";
+                btn.disabled = false;
+            }
+            if (tabId === 'optimized') {
+                stepProg2 = 0;
+                document.querySelectorAll('#network-graph-2 .net-node, #network-graph-2 .net-path, #network-graph-2 .net-text').forEach(el => el.style.opacity = 0);
+                document.querySelectorAll('#network-graph-2 .critical').forEach(el => el.classList.remove('critical'));
+                let btn = document.getElementById('network-steps-2');
+                btn.innerHTML = '▶ 点击验证优化：载入节点';
+                btn.className = "text-center text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 px-4 py-2.5 rounded-lg shadow-md w-full max-w-[600px] transition-all cursor-pointer shadow-emerald-500/30";
+                btn.disabled = false;
+            }
+        }
+
+        function nextStepNetProg1() {
+            let btn = document.getElementById('network-steps-1');
+            if (stepProg1 === 0) { triggerSVGAnimation('#network-graph-1 .net-node'); btn.innerHTML = '▶ 下一步：载入工序路径'; stepProg1++; } 
+            else if (stepProg1 === 1) { triggerSVGAnimation('#network-graph-1 .net-path'); btn.innerHTML = '▶ 下一步：载入工序参数'; stepProg1++; } 
+            else if (stepProg1 === 2) { triggerSVGAnimation('#network-graph-1 .net-text'); btn.innerHTML = '▶ 下一步：分析关键路径'; stepProg1++; } 
+            else if (stepProg1 === 3) {
+                ['node-1','node-2','node-4','node-5', 'path-b','path-d','path-e', 'label-b','label-d','label-e'].forEach(id => {
+                    const el = document.getElementById(id); if(el) el.classList.add('critical');
+                });
+                btn.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> 推演完成：关键线路 B-D-E，工期 19 天（需调整）';
+                btn.className = "text-center text-sm font-bold text-red-600 bg-red-100/50 px-4 py-2.5 rounded-lg border border-red-300 w-full max-w-[600px] transition-all cursor-not-allowed";
+                btn.disabled = true;
+            }
+        }
+
+        function nextStepNetProg2() {
+            let btn = document.getElementById('network-steps-2');
+            if (stepProg2 === 0) { triggerSVGAnimation('#network-graph-2 .net-node'); btn.innerHTML = '▶ 下一步：载入调整后的路径'; stepProg2++; } 
+            else if (stepProg2 === 1) { triggerSVGAnimation('#network-graph-2 .net-path'); btn.innerHTML = '▶ 下一步：载入调整后的参数'; stepProg2++; } 
+            else if (stepProg2 === 2) { triggerSVGAnimation('#network-graph-2 .net-text'); btn.innerHTML = '▶ 下一步：验证新关键路径'; stepProg2++; } 
+            else if (stepProg2 === 3) {
+                document.querySelectorAll('#network-graph-2 .net-node, #network-graph-2 .net-path:not(.net-path-dashed), #network-graph-2 .net-text').forEach(el => el.classList.add('critical'));
+                btn.innerHTML = '<i class="fa-solid fa-check-circle"></i> 推演完成：产生三条关键线路，工期成功压缩至 15 天';
+                btn.className = "text-center text-sm font-bold text-emerald-700 bg-emerald-100/50 px-4 py-2.5 rounded-lg border border-emerald-300 w-full max-w-[600px] transition-all cursor-not-allowed";
+                btn.disabled = true;
+            }
+        }
+
+        // =============== 成本优化 (例 7-8) ===============
+        function switchTabNetCost(tabId) {
+            document.querySelectorAll('#app-net_cost section').forEach(s => s.classList.add('hidden'));
+            document.getElementById(`net_cost-tab-${tabId}`).classList.remove('hidden');
+            document.querySelectorAll('#app-net_cost .nav-active').forEach(l => { l.classList.remove('nav-active'); l.classList.add('text-slate-600', 'bg-transparent'); });
+            let act = document.getElementById(`net_cost-nav-${tabId}`); act.classList.remove('text-slate-600', 'bg-transparent'); act.classList.add('nav-active');
+            
+            if (tabId === 'original') {
+                stepCost1 = 0;
+                document.querySelectorAll('#cost-network-graph .net-node, #cost-network-graph .net-path, #cost-network-graph .net-text, #cost-network-graph .net-text-sm').forEach(el => el.style.opacity = 0);
+                document.querySelectorAll('#cost-network-graph .annotation-box *').forEach(el => el.style.opacity = 0);
+                document.querySelectorAll('#cost-network-graph .net-formula-tip').forEach(el => el.style.opacity = 0);
+                document.querySelectorAll('#cost-network-graph .critical').forEach(el => el.classList.remove('critical'));
+                let btn = document.getElementById('network-steps-cost');
+                btn.innerHTML = '▶ 点击开始推演：载入节点';
+                btn.className = "text-center text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 px-4 py-2.5 rounded-lg shadow-md w-full max-w-[600px] transition-all cursor-pointer shadow-blue-500/30";
+                btn.disabled = false;
+            }
+            if (tabId === 'optimized') {
+                stepCost2 = 0;
+                document.querySelectorAll('#final-cost-network .net-node, #final-cost-network .net-path, #final-cost-network .net-text').forEach(el => el.style.opacity = 0);
+                document.querySelectorAll('#final-cost-network .critical').forEach(el => el.classList.remove('critical'));
+                let btn = document.getElementById('network-steps-3');
+                btn.innerHTML = '▶ 点击生成最终网络：载入节点';
+                btn.className = "text-center text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 px-4 py-2.5 rounded-lg shadow-md w-full max-w-[600px] transition-all cursor-pointer shadow-emerald-500/30";
+                btn.disabled = false;
+            }
+        }
+
+        function nextStepNetCost1() {
+            let btn = document.getElementById('network-steps-cost');
+            if (stepCost1 === 0) { triggerSVGAnimation('#cost-network-graph .net-node'); btn.innerHTML = '▶ 下一步：载入逻辑路径'; stepCost1++; } 
+            else if (stepCost1 === 1) { triggerSVGAnimation('#cost-network-graph .net-path'); btn.innerHTML = '▶ 下一步：载入工序参数'; stepCost1++; } 
+            else if (stepCost1 === 2) { triggerSVGAnimation('#cost-network-graph .net-text, #cost-network-graph .net-text-sm'); btn.innerHTML = '▶ 下一步：计算最早开工时间'; stepCost1++; } 
+            else if (stepCost1 === 3) { document.getElementById('cost-forward-tip').style.opacity = 1; triggerSVGAnimation('#cost-network-graph .net-annot-rect, #cost-network-graph .net-annot-text'); btn.innerHTML = '▶ 下一步：计算最迟开工时间'; stepCost1++; } 
+            else if (stepCost1 === 4) { document.getElementById('cost-forward-tip').style.opacity = 0; document.getElementById('cost-backward-tip').style.opacity = 1; triggerSVGAnimation('#cost-network-graph .net-annot-tri, #cost-network-graph .net-annot-tri-text'); btn.innerHTML = '▶ 下一步：锁定关键路径'; stepCost1++; } 
+            else if (stepCost1 === 5) {
+                document.getElementById('cost-backward-tip').style.opacity = 0;
+                ['cost-node-1','cost-node-2','cost-node-4','cost-node-5','cost-node-7', 'cost-path-a','cost-path-b','cost-path-e','cost-path-g', 'cost-label-a', 'cost-label-b', 'cost-label-e', 'cost-label-g'].forEach(id => {
+                    const el = document.getElementById(id); if(el) el.classList.add('critical');
+                });
+                btn.innerHTML = '<i class="fa-solid fa-flag-checkered"></i> 推演完成：关键线路 A-B-E-G，总工期 50 天';
+                btn.className = "text-center text-sm font-bold text-red-600 bg-red-100/50 px-4 py-2.5 rounded-lg border border-red-300 w-full max-w-[600px] transition-all cursor-not-allowed";
+                btn.disabled = true;
+            }
+        }
+
+        function nextStepNetCost2() {
+            let btn = document.getElementById('network-steps-3');
+            if (stepCost2 === 0) { triggerSVGAnimation('#final-cost-network .net-node'); btn.innerHTML = '▶ 下一步：载入最终路径'; stepCost2++; } 
+            else if (stepCost2 === 1) { triggerSVGAnimation('#final-cost-network .net-path'); btn.innerHTML = '▶ 下一步：载入最终参数'; stepCost2++; } 
+            else if (stepCost2 === 2) { triggerSVGAnimation('#final-cost-network .net-text'); btn.innerHTML = '▶ 下一步：验证关键路径'; stepCost2++; } 
+            else if (stepCost2 === 3) {
+                document.querySelectorAll('#final-cost-network .net-node, #final-cost-network .net-path:not(.net-path-dashed), #final-cost-network .net-text').forEach(el => {
+                    if(!el.id.includes('path-c') && !el.id.includes('label-c')) el.classList.add('critical');
+                });
+                btn.innerHTML = '<i class="fa-solid fa-check-circle"></i> 优化结束：双关键线路，最低成本工期 44 天';
+                btn.className = "text-center text-sm font-bold text-emerald-700 bg-emerald-100/50 px-4 py-2.5 rounded-lg border border-emerald-300 w-full max-w-[600px] transition-all cursor-not-allowed";
+                btn.disabled = true;
+            }
+        }
+
+        // =============== 资源优化 (例 7-9) ===============
+        function switchTabNetRes(tabId) {
+            document.querySelectorAll('#app-net_res section').forEach(s => s.classList.add('hidden'));
+            document.getElementById(`net_res-tab-${tabId}`).classList.remove('hidden');
+            document.querySelectorAll('#app-net_res .nav-active').forEach(l => { l.classList.remove('nav-active'); l.classList.add('text-slate-600', 'bg-transparent'); });
+            let act = document.getElementById(`net_res-nav-${tabId}`); act.classList.remove('text-slate-600', 'bg-transparent'); act.classList.add('nav-active');
+
+            if (tabId === 'original') {
+                stepRes1 = 0;
+                document.querySelectorAll('#res-graph-original .net-node, #res-graph-original .net-path, #res-graph-original .net-text').forEach(el => el.style.opacity = 0);
+                let btn = document.getElementById('network-steps-res-1');
+                btn.innerHTML = '▶ 点击载入初始分布网络';
+                btn.className = "text-center text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 px-4 py-2.5 rounded-lg shadow-md w-full max-w-[600px] transition-all cursor-pointer shadow-blue-500/30";
+                btn.disabled = false;
+            }
+            if (tabId === 'optimized') {
+                stepRes2 = 0;
+                document.querySelectorAll('#res-graph-opt .net-node, #res-graph-opt .net-path, #res-graph-opt .net-text').forEach(el => el.style.opacity = 0);
+                let btn = document.getElementById('network-steps-res-2');
+                if(btn) {
+                    btn.innerHTML = '▶ 点击载入均衡后网络';
+                    btn.className = "text-center text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 px-4 py-2.5 rounded-lg shadow-md w-full max-w-[500px] transition-all cursor-pointer shadow-emerald-500/30 mt-4";
+                    btn.disabled = false;
+                }
+            }
+        }
+
+        function nextStepNetRes1() {
+            let btn = document.getElementById('network-steps-res-1');
+            if (stepRes1 === 0) { triggerSVGAnimation('#res-graph-original .net-node, #res-graph-original .net-path, #res-graph-original .net-text', 0, 100); btn.innerHTML = '▶ 下一步：分析资源峰值'; stepRes1++; } 
+            else if (stepRes1 === 1) {
+                btn.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> 初始高峰叠加：第1~3天，A与B同时开工需 10人';
+                btn.className = "text-center text-sm font-bold text-red-600 bg-red-100/50 px-4 py-2.5 rounded-lg border border-red-300 w-full max-w-[600px] transition-all cursor-not-allowed";
+                btn.disabled = true;
+            }
+        }
+
+        function nextStepNetRes2() {
+            let btn = document.getElementById('network-steps-res-2');
+            if (stepRes2 === 0) { triggerSVGAnimation('#res-graph-opt .net-node, #res-graph-opt .net-path, #res-graph-opt .net-text', 0, 100); btn.innerHTML = '▶ 下一步：验证均衡状态'; stepRes2++; } 
+            else if (stepRes2 === 1) {
+                btn.innerHTML = '<i class="fa-solid fa-check"></i> 资源分布已均衡 (方差最小化)';
+                btn.className = "text-center text-sm font-bold text-emerald-700 bg-emerald-100/50 px-4 py-2.5 rounded-lg border border-emerald-300 w-full max-w-[500px] transition-all cursor-not-allowed mt-4";
+                btn.disabled = true;
+            }
+        }
+
+        // =========================================================
+        // 原有核心：不确定型决策 (Uncert) JS 引擎
         // =========================================================
         const UNCERT_ALTS = ["A1(大型)", "A2(中型)", "A3(小型)"];
         const UNCERT_STATES = ["T1(大)", "T2(中)", "T3(小)"];
         const UNCERT_DEFAULT_MATRIX = [[110, 50, 40], [70, 80, 50], [30, 60, 70]];
-        let uncertState = {
-            matrix: JSON.parse(JSON.stringify(UNCERT_DEFAULT_MATRIX)),
-            beta: 0.60
-        };
+        let uncertState = { matrix: JSON.parse(JSON.stringify(UNCERT_DEFAULT_MATRIX)), beta: 0.60 };
         let uncertAnalysisChart, uncertSandboxChart;
 
         function calculateUncert() {
             let m = uncertState.matrix; let beta = uncertState.beta; let states = m[0].length;
             
-            // 1. 悲观
             let mins = m.map(row => Math.min(...row)); let maxMin = Math.max(...mins);
             let pesBest = mins.map((v, i) => v === maxMin ? i : -1).filter(v => v !== -1);
             
-            // 2. 乐观
             let maxs = m.map(row => Math.max(...row)); let maxMax = Math.max(...maxs);
             let optBest = maxs.map((v, i) => v === maxMax ? i : -1).filter(v => v !== -1);
             
-            // 3. 折中
             let hurwicz = m.map((row, i) => beta * maxs[i] + (1 - beta) * mins[i]); let maxHurwicz = Math.max(...hurwicz);
             let hurBest = hurwicz.map((v, i) => Math.abs(v - maxHurwicz) < 0.001 ? i : -1).filter(v => v !== -1);
             
-            // 4. 等可能
             let laplace = m.map(row => row.reduce((a,b) => a+b, 0) / states); let maxLaplace = Math.max(...laplace);
             let lapBest = laplace.map((v, i) => Math.abs(v - maxLaplace) < 0.001 ? i : -1).filter(v => v !== -1);
             
-            // 5. 遗憾
             let colMaxs = []; for(let j=0; j<states; j++) colMaxs.push(Math.max(...m.map(row => row[j])));
             let regretMatrix = m.map(row => row.map((v, j) => colMaxs[j] - v));
             let maxRegrets = regretMatrix.map(row => Math.max(...row)); let minMaxRegret = Math.min(...maxRegrets);
@@ -804,7 +1432,6 @@ print("最终权重:", np.round(final_w, 4))</code></pre>
             for (let i = 0; i < 3; i++) {
                 html += `<div class="font-bold text-slate-700 bg-slate-100 py-4 rounded shadow-sm">${UNCERT_ALTS[i]}</div>`;
                 for (let j = 0; j < 3; j++) {
-                    // 全新微交互组件：数字框 + 滑块 (带有唯一ID的双向绑定)
                     html += `
                     <div class="flex flex-col gap-1.5 p-1 border border-slate-200 rounded-lg bg-white shadow-sm hover:border-blue-400 hover:shadow transition-all group">
                         <input type="number" id="uncert-num-${i}-${j}" class="w-full px-1 py-1 text-center text-xl font-mono font-bold text-slate-800 outline-none rounded bg-transparent" value="${uncertState.matrix[i][j]}" oninput="updateUncertMatrix(${i}, ${j}, this.value)">
@@ -821,24 +1448,15 @@ print("最终权重:", np.round(final_w, 4))</code></pre>
         function updateUncertMatrix(i, j, val) {
             let v = parseFloat(val); if(isNaN(v)) return;
             uncertState.matrix[i][j] = v;
-            
-            // 安全的双向绑定同步
             let numEl = document.getElementById(`uncert-num-${i}-${j}`);
             let rngEl = document.getElementById(`uncert-rng-${i}-${j}`);
             if (numEl && parseFloat(numEl.value) !== v) numEl.value = v;
             if (rngEl && parseFloat(rngEl.value) !== v) rngEl.value = v;
-            
             updateSandboxUncert();
         }
-        function updateBetaUncert(val) {
-            uncertState.beta = parseFloat(val); document.getElementById('uncert-beta-display').innerText = uncertState.beta.toFixed(2);
-            updateSandboxUncert();
-        }
-        function resetMatrixUncert() {
-            uncertState.matrix = JSON.parse(JSON.stringify(UNCERT_DEFAULT_MATRIX)); uncertState.beta = 0.60;
-            document.getElementById('uncert-beta-slider').value = 0.6; document.getElementById('uncert-beta-display').innerText = "0.60";
-            renderUncertMatrixInputs(); updateSandboxUncert();
-        }
+
+        function updateBetaUncert(val) { uncertState.beta = parseFloat(val); document.getElementById('uncert-beta-display').innerText = uncertState.beta.toFixed(2); updateSandboxUncert(); }
+        function resetMatrixUncert() { uncertState.matrix = JSON.parse(JSON.stringify(UNCERT_DEFAULT_MATRIX)); uncertState.beta = 0.60; document.getElementById('uncert-beta-slider').value = 0.6; document.getElementById('uncert-beta-display').innerText = "0.60"; renderUncertMatrixInputs(); updateSandboxUncert(); }
 
         function switchTabUncert(tabId) {
             document.querySelectorAll('#app-uncert section').forEach(s => s.classList.add('hidden')); document.getElementById(`uncert-tab-${tabId}`).classList.remove('hidden');
@@ -875,7 +1493,7 @@ print("最终权重:", np.round(final_w, 4))</code></pre>
             let detailOpt = `<div class="mt-3 pt-3 border-t border-slate-100 text-[13px] text-slate-500 bg-slate-50 px-2 rounded leading-relaxed font-mono">1.提取各行最大收益：[${formatArr(res.maxs)}]<br>2.取出其中最大极值：<span class="font-bold text-slate-700">${res.maxMax.toFixed(2)}</span></div>`;
             html += createCard("乐观准则 (大中取大)", "fa-solid fa-sun", "red", res.optBest, res.maxMax, detailOpt);
             
-            let detailHur = `<div class="mt-3 pt-3 border-t border-slate-100 text-[13px] text-slate-500 bg-slate-50 px-2 rounded leading-relaxed font-mono">1.依 $\beta$ 加权收益：[${formatArr(res.hurwicz)}]<br>2.取出其中最大极值：<span class="font-bold text-slate-700">${res.maxHurwicz.toFixed(2)}</span></div>`;
+            let detailHur = `<div class="mt-3 pt-3 border-t border-slate-100 text-[13px] text-slate-500 bg-slate-50 px-2 rounded leading-relaxed font-mono">1.依 $\\beta$ 加权收益：[${formatArr(res.hurwicz)}]<br>2.取出其中最大极值：<span class="font-bold text-slate-700">${res.maxHurwicz.toFixed(2)}</span></div>`;
             html += createCard(`折中准则 (β=${uncertState.beta.toFixed(2)})`, "fa-solid fa-scale-balanced", "amber", res.hurBest, res.maxHurwicz, detailHur);
             
             let detailLap = `<div class="mt-3 pt-3 border-t border-slate-100 text-[13px] text-slate-500 bg-slate-50 px-2 rounded leading-relaxed font-mono">1.求各行平均期望值：[${formatArr(res.laplace)}]<br>2.取出其中最大极值：<span class="font-bold text-slate-700">${res.maxLaplace.toFixed(2)}</span></div>`;
@@ -887,14 +1505,13 @@ print("最终权重:", np.round(final_w, 4))</code></pre>
             
             document.getElementById('uncert-results-container').innerHTML = html;
 
-            // ===== 渲染沙盒可视化图表 (采用高性能更新模式) =====
             const m = uncertState.matrix;
             if(uncertSandboxChart) {
                 uncertSandboxChart.data.datasets[0].data = [m[0][0], m[1][0], m[2][0]];
                 uncertSandboxChart.data.datasets[1].data = [m[0][1], m[1][1], m[2][1]];
                 uncertSandboxChart.data.datasets[2].data = [m[0][2], m[1][2], m[2][2]];
                 uncertSandboxChart.data.datasets[3].data = res.hurwicz;
-                uncertSandboxChart.update('none'); // 无动画顺滑更新
+                uncertSandboxChart.update('none');
             } else {
                 let canvasContainer = document.getElementById('uncert-sandbox-chart-container');
                 if(canvasContainer) {
@@ -921,7 +1538,6 @@ print("最终权重:", np.round(final_w, 4))</code></pre>
         function renderAnalysisUncert() {
             const res = calculateUncert();
             const getNames = (idxs) => idxs.map(i => UNCERT_ALTS[i].split('(')[0]).join(' 和 ');
-            
             let tbody = `
                 <tr class="hover:bg-slate-50"><td>悲观准则</td><td class="font-bold text-slate-800">${getNames(res.pesBest)}</td><td>${res.maxMin.toFixed(2)}</td></tr>
                 <tr class="hover:bg-slate-50"><td>乐观准则</td><td class="font-bold text-slate-800">${getNames(res.optBest)}</td><td>${res.maxMax.toFixed(2)}</td></tr>
@@ -931,7 +1547,6 @@ print("最终权重:", np.round(final_w, 4))</code></pre>
             `;
             document.getElementById('uncert-analysis-tbody').innerHTML = tbody;
 
-            // 统计哪个方案胜出次数最多
             let counts = [0, 0, 0];
             [res.pesBest, res.optBest, res.hurBest, res.lapBest, res.regBest].forEach(arr => { arr.forEach(idx => counts[idx]++); });
             let maxCount = Math.max(...counts);
@@ -943,11 +1558,9 @@ print("最终权重:", np.round(final_w, 4))</code></pre>
                 <span class="text-slate-500 text-sm block mt-1">（在 ${counts.reduce((a,b)=>a+b,0)} 次判定中占优了 ${maxCount} 次）</span>
             `;
 
-            // 图表渲染
             if(uncertAnalysisChart) uncertAnalysisChart.destroy();
             document.getElementById('uncert-analysis-chart-container').innerHTML = '<canvas id="uncert-analysisChart"></canvas>';
             
-            // 为了视觉上的统一（越高越好），将遗憾值取负并加上常数，仅作图表展示
             let maxRegVal = Math.max(...res.maxRegrets);
             let visualRegrets = res.maxRegrets.map(v => maxRegVal - v);
 
@@ -1233,7 +1846,7 @@ print("最终权重:", np.round(final_w, 4))</code></pre>
         }
 
         // =========================================================
-        // 原有核心：群组 AHP JS 引擎 (带核心Bug修复)
+        // 原有核心：群组 AHP JS 引擎
         // =========================================================
         const GAHP_INDICATORS = [
             { id: "B11", name: "配送成本", parent: "B1:经济" }, { id: "B12", name: "服务平衡", parent: "B1:经济" },
@@ -1250,13 +1863,12 @@ print("最终权重:", np.round(final_w, 4))</code></pre>
         let gahpLambdas = [...GAHP_DEFAULT_LAMBDAS];
 
         const w_other = GAHP_INDICATORS.map((_, i) => (GAHP_W_FINAL[i] - 0.15 * EXP1_W_DEFAULT[i]) / 0.85);
-        let gahpExpertVectors = [[]]; // Index 0 将由 Expert 1 (用户可控) 填充
+        let gahpExpertVectors = [[]]; 
         
-        // 【核心修复点】为专家2至10生成具有合理偏差的独立意见向量，避免权重调节失效
         for(let i=1; i<10; i++) {
-            let varied = w_other.map((w, j) => w * (1 + Math.sin(i * j) * 0.3)); // 引入周期性自然波动
+            let varied = w_other.map((w, j) => w * (1 + Math.sin(i * j) * 0.3)); 
             let sum = varied.reduce((a, b) => a + b, 0);
-            gahpExpertVectors.push(varied.map(w => w / sum)); // 归一化后存入
+            gahpExpertVectors.push(varied.map(w => w / sum)); 
         }
 
         const getInitExp1Mat = () => ({
@@ -1277,16 +1889,6 @@ print("最终权重:", np.round(final_w, 4))</code></pre>
         };
 
         let gahpMainChart;
-
-        function switchTabGAHP(tabId) {
-            document.querySelectorAll('#app-gahp section').forEach(s => s.classList.add('hidden')); document.getElementById(`gahp-tab-${tabId}`).classList.remove('hidden');
-            document.querySelectorAll('#app-gahp .nav-active').forEach(l => { l.classList.remove('nav-active'); l.classList.add('text-slate-600', 'bg-transparent'); });
-            let act = document.getElementById(`gahp-nav-${tabId}`); act.classList.remove('text-slate-600', 'bg-transparent'); act.classList.add('nav-active');
-            if(tabId === 'individual') selectMatrixGAHPExp1(gahpExp1State.currentKey);
-            if(tabId === 'sandbox') renderSlidersGAHP();
-            if(tabId === 'analysis') renderAnalysisGAHP(); 
-            if(tabId === 'steps') showStepGAHP(1);
-        }
 
         function selectMatrixGAHPExp1(key) {
             gahpExp1State.currentKey = key;
@@ -1354,7 +1956,10 @@ print("最终权重:", np.round(final_w, 4))</code></pre>
             });
             document.getElementById('gahp-exp1-tbody').innerHTML = html;
 
-            updateCalculationsGAHP();
+            // 这里只更新数据，但如果在沙盒外则不强行重绘主图表
+            if(!document.getElementById('gahp-tab-sandbox').classList.contains('hidden')) {
+                updateCalculationsGAHP();
+            }
         }
 
         function renderSlidersGAHP() {
@@ -1377,7 +1982,7 @@ print("最终权重:", np.round(final_w, 4))</code></pre>
             
             if(gahpMainChart) {
                 gahpMainChart.data.datasets[0].data = finalW;
-                gahpMainChart.update('none'); // 无动画顺滑更新
+                gahpMainChart.update('none'); 
             } else {
                 let canvasContainer = document.getElementById('gahp-mainChart-container');
                 if(canvasContainer) {
@@ -1388,6 +1993,22 @@ print("最终权重:", np.round(final_w, 4))</code></pre>
             
             window.gahpLastCalc = finalW;
             if(!document.getElementById('gahp-tab-analysis').classList.contains('hidden')) renderAnalysisGAHP();
+        }
+
+        function switchTabGAHP(tabId) {
+            document.querySelectorAll('#app-gahp section').forEach(s => s.classList.add('hidden')); document.getElementById(`gahp-tab-${tabId}`).classList.remove('hidden');
+            document.querySelectorAll('#app-gahp .nav-active').forEach(l => { l.classList.remove('nav-active'); l.classList.add('text-slate-600', 'bg-transparent'); });
+            let act = document.getElementById(`gahp-nav-${tabId}`); act.classList.remove('text-slate-600', 'bg-transparent'); act.classList.add('nav-active');
+            
+            if(tabId === 'individual') selectMatrixGAHPExp1(gahpExp1State.currentKey);
+            if(tabId === 'sandbox') {
+                renderSlidersGAHP();
+                // 修复图表消失问题：安全地销毁并重建图表
+                if(gahpMainChart) { gahpMainChart.destroy(); gahpMainChart = null; }
+                updateCalculationsGAHP();
+            }
+            if(tabId === 'analysis') renderAnalysisGAHP(); 
+            if(tabId === 'steps') showStepGAHP(1);
         }
 
         function renderAnalysisGAHP() {
@@ -1791,21 +2412,30 @@ print("最终权重:", np.round(final_w, 4))</code></pre>
         // ================= 全局系统启动 =================
         window.onload = () => {
             const commonOpts = { responsive: true, maintainAspectRatio: false };
+            
+            // GM图表初始化
             gmSandboxChart = new Chart(document.getElementById('gm-sandboxChart').getContext('2d'), { type: 'line', data: { labels: [], datasets: [ { label: '真实观测', data: [], borderColor: '#94a3b8', backgroundColor: '#94a3b8', borderWidth: 2, pointStyle: 'rect', tension: 0 }, { label: '拟合曲线', data: [], borderColor: '#2563eb', backgroundColor: 'rgba(37,99,235,0.1)', fill: true, borderDash: [4, 4], tension: 0.3 } ] }, options: { ...commonOpts, plugins: { legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 10, padding: 15 } } }, scales: { y: { grid: { color: '#f1f5f9' } }, x: { grid: { color: '#f1f5f9' } } } } });
             gmAnalysisChart = new Chart(document.getElementById('gm-analysisChart').getContext('2d'), { type: 'line', options: { ...commonOpts, plugins: { legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 10, padding: 15 } } } } });
+            
+            // AHP图表初始化
             ahpSandboxChart = new Chart(document.getElementById('ahp-sandboxChart').getContext('2d'), { type: 'bar', data: { labels: AHP_ALTS, datasets: [{ label: '全局动态总得分', data: [0,0,0,0], backgroundColor: '#94a3b8', borderRadius: 6 }] }, options: { ...commonOpts, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, suggestedMax: 0.5, grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } } } });
             ahpRadarChart = new Chart(document.getElementById('ahp-radarChart').getContext('2d'), { type: 'radar', data: { labels: AHP_CRITERIA, datasets: [] }, options: { ...commonOpts, plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 12, padding: 15, font: { size: 14 } } } }, scales: { r: { beginAtZero: true, suggestedMax: 0.6 } } } });
             
-            // 为了避免提前加载图表导致的 DOM 报错，删除了 window.onload 内部的 gahpMainChart 和 uncertAnalysisChart 初始化
-            // 这些图表将在用户第一次点击对应的沙盒/分析页面时，由函数内部进行安全的懒加载与重绘。
+            // 占位初始化，防止图表未渲染导致引擎报错。真正的渲染在 Tab 切换时按需触发。
+            gahpMainChart = new Chart(document.getElementById('gahp-mainChart') || document.createElement('canvas'), { type: 'bar', data: {datasets: []} });
+            uncertAnalysisChart = new Chart(document.getElementById('uncert-analysisChart') || document.createElement('canvas'), { type: 'bar', data: {datasets: []} });
 
+            // 代码高亮初始化
             hljs.highlightAll();
             
+            // AHP/GAHP 数据初始化
             computeAllAHP(); selectMatrixAHP('CG');
             updateGAHPExpert1(); renderSlidersGAHP(); selectMatrixGAHPExp1('BA');
             
+            // SD 数据初始化
             initSDParamsForCurrentModel(); bindSDDiagramInteraction();
             
+            // 路由到默认界面
             document.getElementById('main-app-selector').value = 'uncert';
             switchApp('uncert');
         };
